@@ -76,8 +76,25 @@ export default function Planet({ body }: PlanetProps) {
         [isSaturn, ringInner, ringOuter]
     );
 
-    // Atmosphere
-    const hasAtmosphere = body.id === 'earth' || body.id === 'venus';
+    // Atmosphere configuration per planet
+    const atmosphereConfig = useMemo(() => {
+        switch (body.id) {
+            case 'earth':
+                return { color: '#4A9EFF', opacity: 0.35, scale: 1.08, falloff: 2.0 };
+            case 'venus':
+                return { color: '#E8C870', opacity: 0.25, scale: 1.12, falloff: 1.5 };
+            case 'mars':
+                return { color: '#CC7744', opacity: 0.12, scale: 1.05, falloff: 3.0 };
+            case 'jupiter':
+                return { color: '#D4A060', opacity: 0.10, scale: 1.06, falloff: 2.5 };
+            case 'saturn':
+                return { color: '#E8D8A0', opacity: 0.08, scale: 1.05, falloff: 2.8 };
+            case 'neptune':
+                return { color: '#4488FF', opacity: 0.15, scale: 1.07, falloff: 2.2 };
+            default:
+                return null;
+        }
+    }, [body.id]);
 
     // Temp vector for light direction calculation
     const tempVec = useMemo(() => new THREE.Vector3(), []);
@@ -141,11 +158,13 @@ export default function Planet({ body }: PlanetProps) {
                     </mesh>
 
                     {/* Atmosphere glow */}
-                    {hasAtmosphere && (
+                    {atmosphereConfig && (
                         <EarthAtmosphere
                             radius={displayRadius}
-                            color={body.display.glowColor || body.display.color}
-                            opacity={body.id === 'earth' ? 0.35 : 0.2}
+                            color={atmosphereConfig.color}
+                            opacity={atmosphereConfig.opacity}
+                            scale={atmosphereConfig.scale}
+                            falloff={atmosphereConfig.falloff}
                         />
                     )}
 

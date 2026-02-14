@@ -1,12 +1,17 @@
 /**
  * planetShaders.ts
  *
- * Procedural GLSL shaders for realistic planet rendering.
+ * Procedural GLSL shaders for photorealistic planet rendering.
  * Each planet gets a unique shader that generates surface details
  * using 3D Simplex noise functions.
  *
- * This avoids the need for external texture files while creating
- * visually rich, realistic planet surfaces.
+ * Enhancements:
+ *  - Earth: night-side city lights, improved ocean specular
+ *  - Neptune: dedicated deep azure shader (split from Uranus)
+ *  - Jupiter/Saturn: wavelength-dependent limb darkening
+ *  - Saturn: approximate ring-shadow on planet body
+ *  - Sun: prominence hints at the limb
+ *  - Color accuracy improvements across all planets
  */
 
 // ─── SHARED GLSL NOISE FUNCTIONS ────────────────────────────────────────────
@@ -110,7 +115,7 @@ export const PLANET_VERTEX = `
 `;
 
 // ─── EARTH SHADER ───────────────────────────────────────────────────────────
-// Generates continents (green/brown), oceans (blue), ice caps, and cloud patterns
+// Continents, oceans, ice caps, clouds, specular, AND night-side city lights
 export const EARTH_FRAGMENT = `
   uniform vec3 lightDirection;
   uniform float time;
@@ -125,9 +130,9 @@ export const EARTH_FRAGMENT = `
   void main() {
     // Lighting
     vec3 lightDir = normalize(lightDirection);
-    float NdotL = max(dot(vNormal, lightDir), 0.0);
-    float ambient = 0.15;
-    float diffuse = NdotL;
+    float NdotL = dot(vNormal, lightDir);
+    float ambient = 0.08;
+    float diffuse = max(NdotL, 0.0);
 
     // Surface noise for continents
     vec3 noisePos = vPosition * 2.5;
@@ -141,10 +146,10 @@ export const EARTH_FRAGMENT = `
     float landMask = smoothstep(-0.05, 0.08, continent);
 
     // Land colors — natural satellite-like greens, browns, and tans
-    vec3 forestGreen = vec3(0.08, 0.30, 0.06);
-    vec3 grassGreen = vec3(0.18, 0.40, 0.10);
-    vec3 desert = vec3(0.65, 0.52, 0.30);
-    vec3 mountain = vec3(0.38, 0.34, 0.28);
+    vec3 forestGreen = vec3(0.06, 0.28, 0.05);
+    vec3 grassGreen = vec3(0.15, 0.38, 0.08);
+    vec3 desert = vec3(0.62, 0.50, 0.28);
+    vec3 mountain = vec3(0.36, 0.32, 0.26);
 
     // Blend land types based on secondary noise
     float landType = fbm(noisePos * 3.0 + 10.0, 4);
@@ -153,16 +158,17 @@ export const EARTH_FRAGMENT = `
     landColor = mix(landColor, desert, smoothstep(0.2, 0.6, landType + latitude * 0.5));
     landColor = mix(landColor, mountain, smoothstep(0.15, 0.4, elevation));
 
-    // Ocean colors — deeper, richer blues
-    vec3 deepOcean = vec3(0.01, 0.05, 0.25);
-    vec3 shallowOcean = vec3(0.04, 0.18, 0.45);
+    // Ocean colors — deeper, richer blues (#003366 base)
+    vec3 deepOcean = vec3(0.0, 0.04, 0.22);
+    vec3 shallowOcean = vec3(0.02, 0.15, 0.40);
     float oceanDepth = smoothstep(-0.4, 0.0, continent);
     vec3 oceanColor = mix(deepOcean, shallowOcean, oceanDepth);
 
-    // Specular highlight on water
+    // Specular highlight on water (improved physically-based)
     vec3 viewDir = normalize(cameraPosition - vWorldPosition);
     vec3 halfVec = normalize(lightDir + viewDir);
-    float specular = pow(max(dot(vNormal, halfVec), 0.0), 40.0) * (1.0 - landMask) * 0.5;
+    float specAngle = max(dot(vNormal, halfVec), 0.0);
+    float specular = pow(specAngle, 64.0) * (1.0 - landMask) * 0.6;
 
     // Combine land and ocean
     vec3 surfaceColor = mix(oceanColor, landColor, landMask);
@@ -172,23 +178,54 @@ export const EARTH_FRAGMENT = `
 
     // Cloud layer — offset noise for cloud movement
     float clouds = fbm(vPosition * 3.5 + vec3(time * 0.02, 0.0, time * 0.01), 5);
-    clouds = smoothstep(0.05, 0.45, clouds) * 0.65;
-    surfaceColor = mix(surfaceColor, vec3(1.0), clouds);
+    clouds = smoothstep(0.05, 0.45, clouds) * 0.6;
 
-    // Final lighting
-    vec3 finalColor = surfaceColor * (ambient + diffuse) + vec3(specular);
+    // === DAY SIDE ===
+    vec3 dayColor = surfaceColor * (ambient + diffuse) + vec3(specular);
+    dayColor = mix(dayColor, vec3(1.0), clouds); // clouds are white on day side
 
     // Atmospheric rim light — thin blue glow at the edges
     float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
-    rim = pow(rim, 3.5);
-    finalColor += vec3(0.30, 0.55, 1.0) * rim * 0.35;
+    float rimGlow = pow(rim, 3.5);
+    dayColor += vec3(0.30, 0.55, 1.0) * rimGlow * 0.35;
+
+    // === NIGHT SIDE — CITY LIGHTS ===
+    // Generate city light pattern using noise at populated latitudes
+    float cityNoise1 = fbm(noisePos * 12.0 + 100.0, 4);
+    float cityNoise2 = snoise(noisePos * 25.0 + 200.0);
+    float cityMask = smoothstep(0.25, 0.55, cityNoise1) * smoothstep(0.1, 0.5, cityNoise2);
+
+    // Cities only on land, not on ice caps
+    cityMask *= landMask * (1.0 - iceCap);
+
+    // Concentrate cities at mid-latitudes (30-55 degrees)
+    float absLat = abs(vPosition.y) / length(vPosition);
+    float latWeight = smoothstep(0.1, 0.25, absLat) * (1.0 - smoothstep(0.65, 0.85, absLat));
+    cityMask *= latWeight;
+
+    // Cities glow warm yellow-orange
+    vec3 cityColor = vec3(1.0, 0.75, 0.30) * cityMask * 0.8;
+
+    // Clouds dim city lights slightly
+    cityColor *= (1.0 - clouds * 0.6);
+
+    // === BLEND DAY / NIGHT ===
+    // Smooth terminator transition
+    float terminator = smoothstep(-0.08, 0.12, NdotL);
+    vec3 nightColor = vec3(0.0) + cityColor;
+
+    // Thin atmospheric crescent on dark side
+    float nightRim = pow(rim, 4.0) * (1.0 - terminator);
+    nightColor += vec3(0.15, 0.25, 0.50) * nightRim * 0.2;
+
+    vec3 finalColor = mix(nightColor, dayColor, terminator);
 
     gl_FragColor = vec4(finalColor, 1.0);
   }
 `;
 
 // ─── MARS SHADER ────────────────────────────────────────────────────────────
-// Red-orange surface with craters, darker regions, and polar ice caps
+// Red-orange surface with craters, darker regions, polar ice caps, pinkish atmosphere
 export const MARS_FRAGMENT = `
   uniform vec3 lightDirection;
   uniform float time;
@@ -203,7 +240,7 @@ export const MARS_FRAGMENT = `
   void main() {
     vec3 lightDir = normalize(lightDirection);
     float NdotL = max(dot(vNormal, lightDir), 0.0);
-    float ambient = 0.14;
+    float ambient = 0.12;
 
     vec3 noisePos = vPosition * 3.0;
 
@@ -211,41 +248,48 @@ export const MARS_FRAGMENT = `
     float terrain = fbm(noisePos, 6);
     float detail = fbm(noisePos * 8.0 + 20.0, 4);
 
-    // Color palette
-    vec3 rustRed = vec3(0.72, 0.28, 0.12);
-    vec3 darkRed = vec3(0.42, 0.15, 0.08);
-    vec3 sandOrange = vec3(0.82, 0.55, 0.30);
-    vec3 darkRegion = vec3(0.30, 0.18, 0.12);
+    // Color palette — rusty red tones (#CD5C5C)
+    vec3 rustRed = vec3(0.80, 0.36, 0.36);
+    vec3 darkRed = vec3(0.45, 0.18, 0.10);
+    vec3 sandOrange = vec3(0.85, 0.58, 0.32);
+    vec3 darkRegion = vec3(0.32, 0.20, 0.14);
 
     // Blend terrain types
     vec3 surfaceColor = mix(rustRed, sandOrange, smoothstep(-0.2, 0.4, terrain));
     surfaceColor = mix(surfaceColor, darkRegion, smoothstep(0.1, 0.5, detail) * 0.5);
     surfaceColor = mix(surfaceColor, darkRed, smoothstep(-0.3, -0.1, terrain) * 0.4);
 
-    // Craters — use absolute noise for round depressions
+    // Craters
     float craterNoise = abs(snoise(noisePos * 6.0));
     float crater = smoothstep(0.02, 0.08, craterNoise);
     surfaceColor *= 0.85 + crater * 0.15;
 
-    // Polar ice caps
+    // Olympus Mons approximation — a large bright region
+    float lat = vPosition.y / length(vPosition);
+    float lon = atan(vPosition.z, vPosition.x);
+    float olympusDist = length(vec2((lat - 0.18) * 4.0, sin(lon + 1.5) * 1.2));
+    float olympus = 1.0 - smoothstep(0.0, 0.6, olympusDist);
+    surfaceColor = mix(surfaceColor, sandOrange * 1.1, olympus * 0.3);
+
+    // Polar ice caps — white CO2/water ice
     float latitude = abs(vPosition.y) / length(vPosition);
     float polarIce = smoothstep(0.82, 0.95, latitude);
     surfaceColor = mix(surfaceColor, vec3(0.88, 0.85, 0.82), polarIce);
 
-    // Dust atmosphere tint
+    // Pinkish-orange dust atmosphere tint at rim
     vec3 viewDir = normalize(cameraPosition - vWorldPosition);
     float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
     rim = pow(rim, 2.5);
 
     vec3 finalColor = surfaceColor * (ambient + NdotL);
-    finalColor += vec3(0.75, 0.35, 0.15) * rim * 0.15;
+    finalColor += vec3(0.80, 0.40, 0.20) * rim * 0.18;
 
     gl_FragColor = vec4(finalColor, 1.0);
   }
 `;
 
 // ─── JUPITER SHADER ─────────────────────────────────────────────────────────
-// Horizontal bands of cream, orange, brown, and the Great Red Spot
+// Horizontal bands, Great Red Spot, turbulence, wavelength-dependent limb darkening
 export const JUPITER_FRAGMENT = `
   uniform vec3 lightDirection;
   uniform float time;
@@ -260,43 +304,57 @@ export const JUPITER_FRAGMENT = `
   void main() {
     vec3 lightDir = normalize(lightDirection);
     float NdotL = max(dot(vNormal, lightDir), 0.0);
-    float ambient = 0.15;
+    float ambient = 0.12;
 
-    // Latitude-based bands — characteristic of Jupiter
+    // Latitude-based bands
     float lat = vPosition.y / length(vPosition);
     float bandFreq = lat * 12.0;
     float band = sin(bandFreq * 3.14159) * 0.5 + 0.5;
 
     // Add turbulence to the bands
     float turbulence = snoise(vec3(vPosition.x * 5.0, vPosition.y * 2.0, vPosition.z * 5.0 + time * 0.005)) * 0.15;
-    band += turbulence;
+    float fineTurb = snoise(vec3(vPosition.x * 12.0, vPosition.y * 4.0, vPosition.z * 12.0 + time * 0.008)) * 0.06;
+    band += turbulence + fineTurb;
 
-    // Color palette for bands
-    vec3 lightBand = vec3(0.90, 0.82, 0.65);   // cream
-    vec3 darkBand = vec3(0.72, 0.48, 0.25);    // brown-orange
+    // Color palette for bands (#F5E6D3 zones, #D4A373/#8B7355 belts)
+    vec3 lightBand = vec3(0.96, 0.90, 0.83);   // cream zones
+    vec3 darkBand = vec3(0.83, 0.64, 0.45);    // brown-orange belts
     vec3 redBand = vec3(0.75, 0.35, 0.18);     // reddish
-    vec3 whiteBand = vec3(0.92, 0.88, 0.80);   // pale
+    vec3 whiteBand = vec3(0.94, 0.90, 0.84);   // pale
 
     vec3 bandColor = mix(darkBand, lightBand, smoothstep(0.3, 0.7, band));
-    
+
     // Some bands are redder
     float redMask = smoothstep(0.6, 0.8, sin(bandFreq * 1.5 + 2.0) * 0.5 + 0.5);
     bandColor = mix(bandColor, redBand, redMask * 0.4);
 
-    // Great Red Spot — approximate position
+    // Great Red Spot (~22° south, reddish-orange #B8705D to #A0522D)
     float spotLat = lat + 0.22;
     float spotLon = atan(vPosition.z, vPosition.x) + time * 0.01;
     float spotDist = length(vec2(spotLat * 6.0, sin(spotLon) * 1.5));
     float spot = 1.0 - smoothstep(0.0, 0.8, spotDist);
-    
+
     // Swirling pattern inside the spot
     float swirl = snoise(vec3(spotLat * 15.0, spotLon * 8.0 + time * 0.02, 0.0));
-    vec3 spotColor = mix(vec3(0.78, 0.30, 0.15), vec3(0.85, 0.45, 0.20), swirl * 0.5 + 0.5);
-    bandColor = mix(bandColor, spotColor, spot * 0.7);
+    vec3 spotColor = mix(vec3(0.72, 0.44, 0.36), vec3(0.63, 0.32, 0.16), swirl * 0.5 + 0.5);
+    bandColor = mix(bandColor, spotColor, spot * 0.75);
 
     // Atmospheric detail
     float detail = fbm(vPosition * 8.0, 3) * 0.08;
     bandColor += detail;
+
+    // === LIMB DARKENING (wavelength-dependent) ===
+    vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+    float NdotV = max(dot(vNormal, viewDir), 0.0);
+    float limbR = pow(NdotV, 0.35);
+    float limbG = pow(NdotV, 0.45);
+    float limbB = pow(NdotV, 0.55);
+    bandColor *= vec3(limbR, limbG, limbB);
+
+    // Subtle atmospheric glow at limb
+    float rim = 1.0 - NdotV;
+    float rimGlow = pow(rim, 3.0);
+    bandColor += vec3(0.85, 0.65, 0.35) * rimGlow * 0.08;
 
     vec3 finalColor = bandColor * (ambient + NdotL);
 
@@ -305,7 +363,7 @@ export const JUPITER_FRAGMENT = `
 `;
 
 // ─── SATURN SHADER ──────────────────────────────────────────────────────────
-// Pale gold bands, subtler than Jupiter
+// Pale golden bands, limb darkening, ring-shadow approximation
 export const SATURN_FRAGMENT = `
   uniform vec3 lightDirection;
   uniform float time;
@@ -320,22 +378,39 @@ export const SATURN_FRAGMENT = `
   void main() {
     vec3 lightDir = normalize(lightDirection);
     float NdotL = max(dot(vNormal, lightDir), 0.0);
-    float ambient = 0.14;
+    float ambient = 0.12;
 
     float lat = vPosition.y / length(vPosition);
     float band = sin(lat * 18.0) * 0.5 + 0.5;
     float turbulence = snoise(vec3(vPosition.x * 4.0, vPosition.y * 2.0, vPosition.z * 4.0)) * 0.1;
     band += turbulence;
 
-    vec3 lightGold = vec3(0.90, 0.82, 0.58);
-    vec3 darkGold = vec3(0.72, 0.62, 0.38);
-    vec3 paleYellow = vec3(0.88, 0.85, 0.72);
+    // Pale golden palette (#F4E4C1)
+    vec3 lightGold = vec3(0.96, 0.89, 0.76);
+    vec3 darkGold = vec3(0.75, 0.65, 0.42);
+    vec3 paleYellow = vec3(0.92, 0.88, 0.76);
 
     vec3 surfaceColor = mix(darkGold, lightGold, smoothstep(0.3, 0.7, band));
     surfaceColor = mix(surfaceColor, paleYellow, smoothstep(0.65, 0.85, band) * 0.3);
 
     float detail = fbm(vPosition * 6.0, 3) * 0.05;
     surfaceColor += detail;
+
+    // === LIMB DARKENING ===
+    vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+    float NdotV = max(dot(vNormal, viewDir), 0.0);
+    float limbR = pow(NdotV, 0.30);
+    float limbG = pow(NdotV, 0.40);
+    float limbB = pow(NdotV, 0.55);
+    surfaceColor *= vec3(limbR, limbG, limbB);
+
+    // === RING SHADOW APPROXIMATION ===
+    // Darken a band near the equator to simulate ring shadow
+    float absLat = abs(lat);
+    float ringShadow = smoothstep(0.0, 0.08, absLat) * (1.0 - smoothstep(0.08, 0.22, absLat));
+    // Only cast shadow where light comes from above
+    float shadowSide = max(dot(normalize(vec3(lightDir.x, 0.0, lightDir.z)), normalize(vec3(vPosition.x, 0.0, vPosition.z))), 0.0);
+    surfaceColor *= 1.0 - ringShadow * 0.35 * shadowSide;
 
     vec3 finalColor = surfaceColor * (ambient + NdotL);
 
@@ -344,7 +419,7 @@ export const SATURN_FRAGMENT = `
 `;
 
 // ─── VENUS SHADER ───────────────────────────────────────────────────────────
-// Thick cloudy atmosphere — swirling yellowed clouds
+// Thick cloudy atmosphere — pale yellowish-white (#E8D7C3 to #FFF8DC)
 export const VENUS_FRAGMENT = `
   uniform vec3 lightDirection;
   uniform float time;
@@ -361,37 +436,95 @@ export const VENUS_FRAGMENT = `
     float NdotL = max(dot(vNormal, lightDir), 0.0);
     float ambient = 0.18;
 
-    // Thick swirling cloud cover
-    vec3 cloudPos = vPosition * 2.5 + vec3(time * 0.008, time * 0.003, 0.0);
+    // Thick swirling cloud cover (super-rotation: 4-day period)
+    vec3 cloudPos = vPosition * 2.5 + vec3(time * 0.012, time * 0.004, 0.0);
     float cloud1 = fbm(cloudPos, 6);
     float cloud2 = fbm(cloudPos * 2.0 + 5.0, 4);
 
-    vec3 paleYellow = vec3(0.88, 0.78, 0.48);
-    vec3 darkOrange = vec3(0.72, 0.52, 0.28);
-    vec3 cream = vec3(0.92, 0.86, 0.68);
+    // Pale yellowish-white palette (#E8D7C3 to #FFF8DC)
+    vec3 paleYellow = vec3(0.91, 0.84, 0.76);
+    vec3 cream = vec3(1.0, 0.97, 0.86);
+    vec3 softOrange = vec3(0.85, 0.72, 0.55);
 
-    vec3 surfaceColor = mix(darkOrange, paleYellow, smoothstep(-0.3, 0.3, cloud1));
-    surfaceColor = mix(surfaceColor, cream, smoothstep(0.0, 0.5, cloud2) * 0.3);
+    vec3 surfaceColor = mix(softOrange, paleYellow, smoothstep(-0.3, 0.3, cloud1));
+    surfaceColor = mix(surfaceColor, cream, smoothstep(0.0, 0.5, cloud2) * 0.35);
 
-    // Slight banding
+    // V-shaped banding pattern (barely visible)
     float lat = vPosition.y / length(vPosition);
-    float banding = sin(lat * 8.0) * 0.03;
+    float banding = sin(lat * 8.0) * 0.02;
     surfaceColor += banding;
 
+    // Very soft terminator (thick atmosphere diffuses light)
+    float softDiffuse = smoothstep(-0.15, 0.3, dot(vNormal, lightDir));
+
+    // Thick atmospheric halo at limb (pale yellow-orange)
     vec3 viewDir = normalize(cameraPosition - vWorldPosition);
     float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
-    rim = pow(rim, 2.0);
+    rim = pow(rim, 1.8);
 
-    vec3 finalColor = surfaceColor * (ambient + NdotL);
-    finalColor += vec3(0.85, 0.65, 0.30) * rim * 0.2;
+    vec3 finalColor = surfaceColor * (ambient + softDiffuse * 0.7);
+    finalColor += vec3(0.90, 0.75, 0.40) * rim * 0.25;
 
     gl_FragColor = vec4(finalColor, 1.0);
   }
 `;
 
 // ─── MERCURY SHADER ─────────────────────────────────────────────────────────
-// Heavily cratered gray surface like the Moon
+// Heavily cratered grayish-brown surface (#8C7853), razor-sharp shadows
 export const MERCURY_FRAGMENT = `
+  uniform vec3 lightDirection;
+  uniform float time;
+
+  varying vec3 vNormal;
+  varying vec3 vPosition;
+  varying vec2 vUv;
+  varying vec3 vWorldPosition;
+
+  ${NOISE_GLSL}
+
+  void main() {
+    vec3 lightDir = normalize(lightDirection);
+    float NdotL = max(dot(vNormal, lightDir), 0.0);
+    // Very low ambient — no atmosphere to scatter light
+    float ambient = 0.04;
+
+    vec3 noisePos = vPosition * 4.0;
+
+    // Rocky terrain
+    float terrain = fbm(noisePos, 6);
+    float fineDetail = fbm(noisePos * 12.0, 4);
+
+    // Multi-scale crater noise
+    float craterNoise = abs(snoise(noisePos * 5.0));
+    float crater2 = abs(snoise(noisePos * 12.0));
+    float crater3 = abs(snoise(noisePos * 20.0));
+    float craters = smoothstep(0.02, 0.1, craterNoise) * smoothstep(0.03, 0.12, crater2);
+
+    // Bright ray systems from recent impacts
+    float rays = smoothstep(0.01, 0.03, crater3) * 0.15;
+
+    // Color palette — grayish-brown (#8C7853)
+    vec3 lightGray = vec3(0.55, 0.47, 0.33);
+    vec3 darkGray = vec3(0.30, 0.27, 0.24);
+    vec3 brownGray = vec3(0.42, 0.38, 0.30);
+
+    vec3 surfaceColor = mix(darkGray, lightGray, smoothstep(-0.3, 0.3, terrain));
+    surfaceColor = mix(surfaceColor, brownGray, smoothstep(-0.1, 0.2, fineDetail) * 0.3);
+    surfaceColor *= 0.8 + craters * 0.2;
+    surfaceColor += rays; // bright ray streaks
+
+    // Razor-sharp shadow boundary (no atmosphere)
+    float sharpDiffuse = smoothstep(-0.01, 0.02, dot(vNormal, lightDir));
+
+    vec3 finalColor = surfaceColor * (ambient + sharpDiffuse);
+
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;
+
+// ─── NEPTUNE SHADER ─────────────────────────────────────────────────────────
+// Rich deep azure blue (#3A5FCD), bright white scooter clouds, visible storms
+export const NEPTUNE_FRAGMENT = `
   uniform vec3 lightDirection;
   uniform float time;
 
@@ -407,24 +540,45 @@ export const MERCURY_FRAGMENT = `
     float NdotL = max(dot(vNormal, lightDir), 0.0);
     float ambient = 0.12;
 
-    vec3 noisePos = vPosition * 4.0;
+    float lat = vPosition.y / length(vPosition);
 
-    // Rocky terrain
-    float terrain = fbm(noisePos, 6);
-    float fineDetail = fbm(noisePos * 12.0, 4);
+    // Deep azure base color (#3A5FCD)
+    vec3 deepBlue = vec3(0.23, 0.37, 0.80);
+    vec3 midBlue = vec3(0.28, 0.42, 0.88);
+    vec3 brightBlue = vec3(0.35, 0.50, 0.95);
 
-    // Crater noise
-    float craterNoise = abs(snoise(noisePos * 5.0));
-    float crater2 = abs(snoise(noisePos * 12.0));
-    float craters = smoothstep(0.02, 0.1, craterNoise) * smoothstep(0.03, 0.12, crater2);
+    // Subtle horizontal banding (more visible than Uranus)
+    float band = sin(lat * 14.0) * 0.5 + 0.5;
+    float turbulence = snoise(vec3(vPosition.x * 4.0, vPosition.y * 2.0, vPosition.z * 4.0 + time * 0.008)) * 0.12;
+    band += turbulence;
 
-    vec3 lightGray = vec3(0.58, 0.55, 0.50);
-    vec3 darkGray = vec3(0.32, 0.30, 0.28);
-    vec3 brownGray = vec3(0.45, 0.40, 0.35);
+    vec3 surfaceColor = mix(deepBlue, midBlue, smoothstep(0.3, 0.7, band));
+    surfaceColor = mix(surfaceColor, brightBlue, smoothstep(0.7, 0.95, band) * 0.25);
 
-    vec3 surfaceColor = mix(darkGray, lightGray, smoothstep(-0.3, 0.3, terrain));
-    surfaceColor = mix(surfaceColor, brownGray, smoothstep(-0.1, 0.2, fineDetail) * 0.3);
-    surfaceColor *= 0.8 + craters * 0.2;
+    // === WHITE SCOOTER CLOUDS (bright cirrus-like features) ===
+    float cloudNoise1 = snoise(vPosition * 6.0 + vec3(time * 0.025, 0.0, time * 0.015));
+    float cloudNoise2 = snoise(vPosition * 10.0 + vec3(time * 0.04, time * 0.01, 0.0));
+    float scooterClouds = smoothstep(0.45, 0.75, cloudNoise1) * smoothstep(0.3, 0.6, cloudNoise2);
+    surfaceColor = mix(surfaceColor, vec3(1.0, 0.98, 0.95), scooterClouds * 0.5);
+
+    // === GREAT DARK SPOT (approximate) ===
+    float spotLat = lat + 0.3;
+    float spotLon = atan(vPosition.z, vPosition.x) + time * 0.005;
+    float spotDist = length(vec2(spotLat * 5.0, sin(spotLon) * 1.8));
+    float darkSpot = 1.0 - smoothstep(0.0, 0.6, spotDist);
+    surfaceColor = mix(surfaceColor, deepBlue * 0.6, darkSpot * 0.4);
+
+    // White companion cloud near dark spot
+    float companionDist = length(vec2((spotLat - 0.08) * 6.0, sin(spotLon + 0.3) * 2.0));
+    float companion = 1.0 - smoothstep(0.0, 0.3, companionDist);
+    surfaceColor = mix(surfaceColor, vec3(1.0), companion * 0.3);
+
+    // === LIMB BRIGHTENING (atmospheric scattering) ===
+    vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+    float NdotV = max(dot(vNormal, viewDir), 0.0);
+    float rim = 1.0 - NdotV;
+    float limbGlow = pow(rim, 2.5);
+    surfaceColor += deepBlue * 0.5 * limbGlow;
 
     vec3 finalColor = surfaceColor * (ambient + NdotL);
 
@@ -432,8 +586,8 @@ export const MERCURY_FRAGMENT = `
   }
 `;
 
-// ─── NEPTUNE / URANUS SHADER ────────────────────────────────────────────────
-// Ice giant — smooth blue/cyan with subtle banding and storms
+// ─── URANUS SHADER (ICE GIANT) ──────────────────────────────────────────────
+// Nearly featureless pale cyan-blue (#4FD0E7), very subtle banding
 export const ICE_GIANT_FRAGMENT = `
   uniform vec3 lightDirection;
   uniform float time;
@@ -454,33 +608,33 @@ export const ICE_GIANT_FRAGMENT = `
 
     float lat = vPosition.y / length(vPosition);
 
-    // Subtle banding
+    // Very subtle banding (almost featureless)
     float band = sin(lat * 10.0) * 0.5 + 0.5;
-    float turbulence = snoise(vec3(vPosition.x * 3.0, vPosition.y * 1.5, vPosition.z * 3.0 + time * 0.003)) * 0.1;
+    float turbulence = snoise(vec3(vPosition.x * 3.0, vPosition.y * 1.5, vPosition.z * 3.0 + time * 0.003)) * 0.06;
     band += turbulence;
 
-    vec3 surfaceColor = mix(baseColor * 0.7, baseColor, smoothstep(0.3, 0.7, band));
-    surfaceColor = mix(surfaceColor, bandColor, smoothstep(0.6, 0.9, band) * 0.2);
+    vec3 surfaceColor = mix(baseColor * 0.85, baseColor, smoothstep(0.3, 0.7, band));
+    surfaceColor = mix(surfaceColor, bandColor, smoothstep(0.6, 0.9, band) * 0.15);
 
-    // Storm features
+    // Very rare white cloud spots
     float storm = snoise(vPosition * 5.0 + vec3(0.0, 0.0, time * 0.01));
-    float stormMask = smoothstep(0.5, 0.8, storm);
-    surfaceColor = mix(surfaceColor, baseColor * 1.3, stormMask * 0.15);
+    float stormMask = smoothstep(0.6, 0.85, storm);
+    surfaceColor = mix(surfaceColor, baseColor * 1.2, stormMask * 0.1);
 
-    // Slight haze rim
+    // Subtle limb brightening from atmospheric scattering
     vec3 viewDir = normalize(cameraPosition - vWorldPosition);
     float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
     rim = pow(rim, 2.5);
+    surfaceColor += baseColor * rim * 0.1;
 
     vec3 finalColor = surfaceColor * (ambient + NdotL);
-    finalColor += baseColor * rim * 0.12;
 
     gl_FragColor = vec4(finalColor, 1.0);
   }
 `;
 
 // ─── MOON SHADER ────────────────────────────────────────────────────────────
-// Gray cratered surface
+// Gray cratered surface with maria (dark basaltic seas) and bright ray systems
 export const MOON_FRAGMENT = `
   uniform vec3 lightDirection;
   uniform float time;
@@ -496,25 +650,39 @@ export const MOON_FRAGMENT = `
   void main() {
     vec3 lightDir = normalize(lightDirection);
     float NdotL = max(dot(vNormal, lightDir), 0.0);
-    float ambient = 0.05;
+    // Very low ambient — no atmosphere
+    float ambient = 0.03;
 
     vec3 noisePos = vPosition * 4.0;
     float terrain = fbm(noisePos, 5);
     float craterNoise = abs(snoise(noisePos * 6.0));
     float craters = smoothstep(0.03, 0.12, craterNoise);
 
+    // Maria (dark basaltic seas)
+    float mariaNoise = fbm(noisePos * 0.8 + 50.0, 3);
+    float mariaMask = smoothstep(-0.1, 0.2, mariaNoise) * 0.3;
+
     vec3 surfaceColor = baseColor * (0.7 + terrain * 0.3);
     surfaceColor *= 0.85 + craters * 0.15;
+    surfaceColor = mix(surfaceColor, baseColor * 0.5, mariaMask); // darker maria
 
-    vec3 finalColor = surfaceColor * (ambient + NdotL);
+    // Bright ray systems
+    float rayNoise = abs(snoise(noisePos * 15.0));
+    float rays = smoothstep(0.01, 0.04, rayNoise) * 0.12;
+    surfaceColor += rays;
+
+    // Razor-sharp shadows (no atmosphere)
+    float sharpDiffuse = smoothstep(-0.005, 0.015, dot(vNormal, lightDir));
+
+    vec3 finalColor = surfaceColor * (ambient + sharpDiffuse);
 
     gl_FragColor = vec4(finalColor, 1.0);
   }
 `;
 
 // ─── SUN SHADER ─────────────────────────────────────────────────────────────
-// Realistic animated solar surface with convection cells, sunspots,
-// faculae, granulation, chromospheric rim and limb darkening
+// Animated solar surface with convection cells, sunspots, faculae,
+// chromospheric rim, limb darkening, and prominence hints
 export const SUN_FRAGMENT = `
   uniform float time;
 
@@ -527,7 +695,6 @@ export const SUN_FRAGMENT = `
 
   void main() {
     // === GRANULATION (convection cells) ===
-    // Multiple octaves at different scales for realistic turbulent surface
     vec3 slowDrift = vec3(time * 0.02, time * 0.015, time * 0.018);
     vec3 noisePos1 = vPosition * 4.0 + slowDrift;
     vec3 noisePos2 = vPosition * 8.0 + slowDrift * 1.3;
@@ -538,14 +705,14 @@ export const SUN_FRAGMENT = `
                       + fbm(noisePos3, 3) * 0.15;
 
     // === SOLAR SURFACE PALETTE ===
-    vec3 brightWhite  = vec3(1.0, 0.98, 0.90);   // hottest granule centers
-    vec3 hotYellow    = vec3(1.0, 0.92, 0.65);   // typical photosphere
-    vec3 warmOrange   = vec3(0.98, 0.72, 0.35);  // granule boundaries
-    vec3 coolOrange   = vec3(0.90, 0.55, 0.18);  // intergranular lanes
-    vec3 darkUmbra    = vec3(0.45, 0.25, 0.08);  // sunspot umbra
-    vec3 penumbra     = vec3(0.70, 0.42, 0.15);  // sunspot penumbra
+    vec3 brightWhite  = vec3(1.0, 0.98, 0.90);
+    vec3 hotYellow    = vec3(1.0, 0.92, 0.65);
+    vec3 warmOrange   = vec3(0.98, 0.72, 0.35);
+    vec3 coolOrange   = vec3(0.90, 0.55, 0.18);
+    vec3 darkUmbra    = vec3(0.45, 0.25, 0.08);
+    vec3 penumbra     = vec3(0.70, 0.42, 0.15);
 
-    // Base surface: blend from cool intergranular to hot cell centers
+    // Base surface
     vec3 surfaceColor = mix(coolOrange, warmOrange, smoothstep(-0.3, 0.0, granulation));
     surfaceColor = mix(surfaceColor, hotYellow, smoothstep(0.0, 0.25, granulation));
     surfaceColor = mix(surfaceColor, brightWhite, smoothstep(0.25, 0.5, granulation) * 0.4);
@@ -555,7 +722,6 @@ export const SUN_FRAGMENT = `
     float spotNoise2 = snoise(vPosition * 2.5 + time * 0.005 + 50.0);
     float spotMask = smoothstep(0.58, 0.72, spotNoise1) * smoothstep(0.45, 0.65, spotNoise2);
 
-    // Penumbra ring around umbra
     float penumbraMask = smoothstep(0.50, 0.62, spotNoise1) * smoothstep(0.38, 0.55, spotNoise2);
     surfaceColor = mix(surfaceColor, penumbra, penumbraMask * 0.5);
     surfaceColor = mix(surfaceColor, darkUmbra, spotMask * 0.7);
@@ -570,8 +736,7 @@ export const SUN_FRAGMENT = `
     float activeMask = smoothstep(0.4, 0.65, active) * (1.0 - spotMask);
     surfaceColor = mix(surfaceColor, hotYellow * 1.15, activeMask * 0.25);
 
-    // === LIMB DARKENING ===
-    // Real solar limb darkening: edges get redder (stronger darkening for blue)
+    // === LIMB DARKENING (wavelength-dependent) ===
     vec3 viewDir = normalize(cameraPosition - vWorldPosition);
     float NdotV = max(dot(vNormal, viewDir), 0.0);
     float limbR = pow(NdotV, 0.30);
@@ -580,14 +745,19 @@ export const SUN_FRAGMENT = `
     surfaceColor *= vec3(limbR, limbG, limbB);
 
     // === CHROMOSPHERIC RIM ===
-    // Thin reddish-pink glow at the very edge (like real solar limb)
     float rimEdge = 1.0 - NdotV;
     float chromosphere = smoothstep(0.75, 0.98, rimEdge);
     vec3 chromoColor = vec3(1.0, 0.30, 0.15);
     surfaceColor += chromoColor * chromosphere * 0.35;
 
+    // === SOLAR PROMINENCES (hint at the limb) ===
+    float promNoise = snoise(vPosition * 3.0 + vec3(time * 0.015, time * 0.01, 0.0));
+    float promMask = smoothstep(0.85, 0.97, rimEdge) * smoothstep(0.3, 0.7, promNoise);
+    vec3 promColor = vec3(1.0, 0.45, 0.15);
+    surfaceColor += promColor * promMask * 0.4;
+
     // === FINAL EMISSION ===
-    gl_FragColor = vec4(surfaceColor * 2.0, 1.0);
+    gl_FragColor = vec4(surfaceColor * 2.2, 1.0);
   }
 `;
 
@@ -604,7 +774,7 @@ export const SATURN_RING_FRAGMENT = `
   ${NOISE_GLSL}
 
   void main() {
-    // RingGeometry lies in the XY plane, so use xy for radial distance
+    // RingGeometry lies in the XY plane
     float dist = length(vPosition.xy);
     float t = (dist - innerRadius) / (outerRadius - innerRadius);
 
@@ -646,7 +816,6 @@ export const SATURN_RING_FRAGMENT = `
     ringColor = mix(ringColor, iceColor, smoothstep(0.75, 0.95, t) * 0.4);
 
     float colorNoise = snoise(vec3(t * 40.0, angle * 2.0, 0.5));
-    // Boost brightness so ring isn't too dark
     ringColor *= 1.3;
     ringColor *= 0.92 + colorNoise * 0.08;
 
