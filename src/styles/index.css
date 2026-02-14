@@ -145,3 +145,36 @@ button:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ─── RIGHT PANEL (responsive) ────────────────────────────────────────────── */
+.right-panel {
+  position: absolute;
+  top: 3.5rem;
+  right: 0;
+  bottom: 4rem;
+  width: 20rem;          /* 320px desktop */
+  z-index: 40;
+  border-radius: 1rem 0 0 1rem;
+  overflow: hidden;
+}
+
+/* Tablets / smaller screens */
+@media (max-width: 768px) {
+  .right-panel {
+    width: 100%;
+    max-width: 100%;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 55vh;
+    border-radius: 1rem 1rem 0 0;
+  }
+}
+
+/* Large screens */
+@media (min-width: 1280px) {
+  .right-panel {
+    width: 24rem;        /* 384px on xl */
+  }
+}

@@ -31,9 +31,20 @@ export interface OrbitalElements {
 
 export interface PhysicalProperties {
   radius: number;              // km
-  mass: number;                // kg (×10^24 for planets)
+  mass: number;                // kg (×10^24 for planets, ×10^24 for Sun)
   rotationPeriod: number;      // hours (negative = retrograde)
   axialTilt: number;           // degrees
+  gravity?: number;            // m/s² surface gravity
+  escapeVelocity?: number;     // km/s
+  meanTemp?: number;           // K (mean surface or cloud-top temperature)
+  atmosphere?: string;         // primary atmospheric composition
+  magneticField?: boolean;     // has significant magnetic field
+  numberOfMoons?: number;      // total known moons
+  surfacePressure?: number;    // atm (Earth = 1)
+  density?: number;            // g/cm³ mean density
+  spectralType?: string;       // for stars
+  luminosity?: number;         // solar luminosities (for stars)
+  absoluteMagnitude?: number;  // for stars
 }
 
 export interface DisplayProperties {
@@ -61,7 +72,7 @@ export const REAL_AU = 500; // 1 AU = 500 scene units (real-scale mode)
 
 // Planet visual radius multiplier so planets are visible (real scale they'd be invisible)
 export const VISUAL_RADIUS_SCALE = 0.0004; // km → scene units (visual mode)
-export const SUN_VISUAL_SCALE = 0.00005;   // Sun is huge, scale it down more
+export const SUN_VISUAL_SCALE = 0.000004;  // Sun is huge, scale it down more
 
 // ─── PLANETS ────────────────────────────────────────────────────────────────────
 
@@ -82,6 +93,15 @@ export const SUN: CelestialBody = {
     mass: 1989100,
     rotationPeriod: 609.12,   // ~25.38 days at equator
     axialTilt: 7.25,
+    gravity: 274,
+    escapeVelocity: 617.7,
+    meanTemp: 5778,
+    density: 1.408,
+    spectralType: 'G2V',
+    luminosity: 1.0,
+    absoluteMagnitude: 4.83,
+    atmosphere: 'Hydrogen (~73%), Helium (~25%)',
+    magneticField: true,
   },
   display: {
     color: '#FDB813',
@@ -110,6 +130,14 @@ export const MERCURY: CelestialBody = {
     mass: 0.33011,
     rotationPeriod: 1407.6,    // ~58.65 days
     axialTilt: 0.034,
+    gravity: 3.7,
+    escapeVelocity: 4.25,
+    meanTemp: 440,
+    density: 5.427,
+    atmosphere: 'Trace (O₂, Na, H₂)',
+    magneticField: true,
+    numberOfMoons: 0,
+    surfacePressure: 0,
   },
   display: {
     color: '#8C7E6D',
@@ -136,6 +164,14 @@ export const VENUS: CelestialBody = {
     mass: 4.8675,
     rotationPeriod: -5832.5,    // retrograde rotation (~243 days)
     axialTilt: 177.36,
+    gravity: 8.87,
+    escapeVelocity: 10.36,
+    meanTemp: 737,
+    density: 5.243,
+    atmosphere: 'CO₂ (~96.5%), N₂ (~3.5%)',
+    magneticField: false,
+    numberOfMoons: 0,
+    surfacePressure: 92,
   },
   display: {
     color: '#C8A25C',
@@ -163,10 +199,18 @@ export const EARTH: CelestialBody = {
     mass: 5.9724,
     rotationPeriod: 23.9345,
     axialTilt: 23.4393,
+    gravity: 9.807,
+    escapeVelocity: 11.186,
+    meanTemp: 288,
+    density: 5.514,
+    atmosphere: 'N₂ (~78%), O₂ (~21%), Ar (~0.9%)',
+    magneticField: true,
+    numberOfMoons: 1,
+    surfacePressure: 1,
   },
   display: {
-    color: '#4A90D9',
-    glowColor: '#6BB5FF44',
+    color: '#2E6BBF',
+    glowColor: '#4A9EFF44',
     description: 'Earth is the third planet from the Sun and the only known planet to harbor life. It has liquid water on its surface and a protective magnetic field.',
     category: 'planet',
   },
@@ -190,6 +234,14 @@ export const MARS: CelestialBody = {
     mass: 0.64171,
     rotationPeriod: 24.6229,
     axialTilt: 25.19,
+    gravity: 3.721,
+    escapeVelocity: 5.027,
+    meanTemp: 210,
+    density: 3.934,
+    atmosphere: 'CO₂ (~95.3%), N₂ (~2.7%)',
+    magneticField: false,
+    numberOfMoons: 2,
+    surfacePressure: 0.006,
   },
   display: {
     color: '#C1440E',
@@ -216,6 +268,13 @@ export const JUPITER: CelestialBody = {
     mass: 1898.19,
     rotationPeriod: 9.925,
     axialTilt: 3.13,
+    gravity: 24.79,
+    escapeVelocity: 59.5,
+    meanTemp: 165,
+    density: 1.326,
+    atmosphere: 'H₂ (~89.8%), He (~10.2%)',
+    magneticField: true,
+    numberOfMoons: 95,
   },
   display: {
     color: '#C88B3A',
@@ -242,6 +301,13 @@ export const SATURN: CelestialBody = {
     mass: 568.34,
     rotationPeriod: 10.656,
     axialTilt: 26.73,
+    gravity: 10.44,
+    escapeVelocity: 35.5,
+    meanTemp: 134,
+    density: 0.687,
+    atmosphere: 'H₂ (~96.3%), He (~3.25%)',
+    magneticField: true,
+    numberOfMoons: 146,
   },
   display: {
     color: '#D4B96A',
@@ -268,6 +334,13 @@ export const URANUS: CelestialBody = {
     mass: 86.813,
     rotationPeriod: -17.24,    // retrograde
     axialTilt: 97.77,
+    gravity: 8.87,
+    escapeVelocity: 21.3,
+    meanTemp: 76,
+    density: 1.270,
+    atmosphere: 'H₂ (~82.5%), He (~15.2%), CH₄ (~2.3%)',
+    magneticField: true,
+    numberOfMoons: 28,
   },
   display: {
     color: '#72B5C4',
@@ -295,6 +368,13 @@ export const NEPTUNE: CelestialBody = {
     mass: 102.413,
     rotationPeriod: 16.11,
     axialTilt: 28.32,
+    gravity: 11.15,
+    escapeVelocity: 23.5,
+    meanTemp: 72,
+    density: 1.638,
+    atmosphere: 'H₂ (~80%), He (~19%), CH₄ (~1.5%)',
+    magneticField: true,
+    numberOfMoons: 16,
   },
   display: {
     color: '#3F54BA',

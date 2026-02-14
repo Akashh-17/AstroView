@@ -114,7 +114,8 @@ export default function Planet({ body }: PlanetProps) {
         }
     });
 
-    const handleClick = useCallback(() => {
+    const handleClick = useCallback((e: THREE.Event) => {
+        (e as any).stopPropagation();
         selectBody(body.id);
     }, [body.id, selectBody]);
 
@@ -156,10 +157,14 @@ export default function Planet({ body }: PlanetProps) {
                     )}
                 </group>
 
-                {/* Selection ring */}
+                {/* Selection ring — placed outside Saturn's rings (2.4×) */}
                 {isSelected && (
                     <mesh rotation={[Math.PI / 2, 0, 0]}>
-                        <ringGeometry args={[displayRadius * 1.6, displayRadius * 1.7, 64]} />
+                        <ringGeometry args={[
+                            isSaturn ? displayRadius * 2.6 : displayRadius * 1.6,
+                            isSaturn ? displayRadius * 2.7 : displayRadius * 1.7,
+                            64
+                        ]} />
                         <meshBasicMaterial
                             color="#3e63dd"
                             side={THREE.DoubleSide}
@@ -173,7 +178,11 @@ export default function Planet({ body }: PlanetProps) {
                 {/* Hover glow ring */}
                 {hovered && !isSelected && (
                     <mesh rotation={[Math.PI / 2, 0, 0]}>
-                        <ringGeometry args={[displayRadius * 1.4, displayRadius * 1.5, 64]} />
+                        <ringGeometry args={[
+                            isSaturn ? displayRadius * 2.6 : displayRadius * 1.4,
+                            isSaturn ? displayRadius * 2.7 : displayRadius * 1.5,
+                            64
+                        ]} />
                         <meshBasicMaterial
                             color="#ffffff"
                             side={THREE.DoubleSide}
@@ -187,9 +196,9 @@ export default function Planet({ body }: PlanetProps) {
                 {/* HTML Label */}
                 {showLabels && (
                     <Html
-                        position={[0, displayRadius + 0.6, 0]}
+                        position={[0, displayRadius + 0.8, 0]}
                         center
-                        distanceFactor={15}
+                        distanceFactor={12}
                         style={{
                             pointerEvents: 'none',
                             userSelect: 'none',
@@ -197,14 +206,17 @@ export default function Planet({ body }: PlanetProps) {
                     >
                         <div
                             style={{
-                                color: isSelected ? '#5577ee' : hovered ? '#ffffff' : '#ffffffbb',
-                                fontSize: '11px',
+                                color: isSelected ? '#6BB5FF' : hovered ? '#ffffff' : '#ffffffee',
+                                fontSize: '13px',
                                 fontFamily: "'Inter', sans-serif",
-                                fontWeight: isSelected ? 600 : 400,
-                                letterSpacing: '0.12em',
+                                fontWeight: isSelected ? 700 : 500,
+                                letterSpacing: '0.14em',
                                 textTransform: 'uppercase',
                                 whiteSpace: 'nowrap',
-                                textShadow: '0 0 10px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.6)',
+                                textShadow: '0 0 6px rgba(0,0,0,1), 0 0 12px rgba(0,0,0,0.95), 0 0 24px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,1)',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                backgroundColor: 'rgba(0,0,0,0.45)',
                                 transition: 'color 0.3s',
                             }}
                         >

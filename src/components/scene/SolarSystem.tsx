@@ -34,11 +34,11 @@ function SolarSystemScene() {
         <>
             <TimeTickLoop />
             <CameraController />
-            <Starfield count={8000} radius={700} />
+            <Starfield count={12000} radius={5000} />
 
-            <mesh visible={false} onClick={handleMissedClick}>
-                <sphereGeometry args={[600, 8, 8]} />
-                <meshBasicMaterial side={THREE.BackSide} />
+            <mesh visible={false} onClick={handleMissedClick} renderOrder={-1}>
+                <sphereGeometry args={[4500, 8, 8]} />
+                <meshBasicMaterial side={THREE.BackSide} depthWrite={false} />
             </mesh>
 
             <Sun />
@@ -63,7 +63,7 @@ export default function SolarSystem() {
                 position: [50, 35, 80],
                 fov: 45,
                 near: 0.01,
-                far: 2000,
+                far: 12000,
             }}
             gl={{
                 antialias: true,

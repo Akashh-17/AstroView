@@ -76,10 +76,10 @@ export default function Starfield({ count = 8000, radius = 800 }: StarfieldProps
                 </bufferGeometry>
                 <pointsMaterial
                     color="#ffffff"
-                    size={1.0}
+                    size={2.5}
                     sizeAttenuation
                     transparent
-                    opacity={0.85}
+                    opacity={0.9}
                     depthWrite={false}
                     blending={THREE.AdditiveBlending}
                 />
@@ -95,10 +95,10 @@ export default function Starfield({ count = 8000, radius = 800 }: StarfieldProps
                 </bufferGeometry>
                 <pointsMaterial
                     color="#334488"
-                    size={8}
+                    size={12}
                     sizeAttenuation
                     transparent
-                    opacity={0.03}
+                    opacity={0.04}
                     depthWrite={false}
                     blending={THREE.AdditiveBlending}
                 />
