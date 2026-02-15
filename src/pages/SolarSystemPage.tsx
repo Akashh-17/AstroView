@@ -1,5 +1,6 @@
 /**
  * SolarSystemPage.tsx — Full solar system visualization page
+ * Astrolens "Eyes on the Solar System" style layout
  */
 import SolarSystem from '../components/scene/SolarSystem';
 import TopNav from '../components/ui/TopNav';
@@ -18,10 +19,10 @@ export default function SolarSystemPage() {
 
             {/* UI Overlay — pointer-events:none on container, auto on children */}
             <div className="absolute inset-0 z-10 pointer-events-none flex flex-col">
-                <TopNav />
-                <LeftSidebar />
+                <TopNav variant="solar-system" />
+                <LeftSidebar variant="solar-system" />
                 <RightPanel />
-                <Toolbar />
+                <Toolbar variant="solar-system" />
                 <TimelineControl />
             </div>
         </div>

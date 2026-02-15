@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
-/* ─── NASA DESIGN TOKENS ──────────────────────────────────────────────────── */
+/* ─── ASTROLENS DESIGN TOKENS ─────────────────────────────────────────────── */
 @theme {
   --color-space-black: #000000;
-  --color-nasa-blue: #0B3D91;
-  --color-nasa-red: #FC3D21;
+  --color-astrolens-blue: #0B3D91;
+  --color-astrolens-red: #FC3D21;
   --color-panel: rgba(12, 12, 18, 0.92);
   --color-panel-hover: rgba(25, 25, 35, 0.95);
   --color-surface: rgba(20, 20, 30, 0.85);
@@ -177,4 +177,54 @@ button:focus-visible {
   .right-panel {
     width: 24rem;        /* 384px on xl */
   }
+}
+
+/* ─── TIMELINE SCRUBBER ───────────────────────────────────────────────────── */
+.timeline-scrubber {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.timeline-scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #6BB5FF;
+  border: 2px solid rgba(0, 0, 0, 0.5);
+  cursor: grab;
+  box-shadow: 0 0 8px rgba(107, 181, 255, 0.4), 0 0 2px rgba(0, 0, 0, 0.8);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.timeline-scrubber::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+  box-shadow: 0 0 12px rgba(107, 181, 255, 0.6), 0 0 2px rgba(0, 0, 0, 0.8);
+}
+
+.timeline-scrubber::-webkit-slider-thumb:active {
+  cursor: grabbing;
+}
+
+.timeline-scrubber::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #6BB5FF;
+  border: 2px solid rgba(0, 0, 0, 0.5);
+  cursor: grab;
+  box-shadow: 0 0 8px rgba(107, 181, 255, 0.4);
+}
+
+.timeline-scrubber::-moz-range-track {
+  background: rgba(255, 255, 255, 0.08);
+  height: 4px;
+  border-radius: 2px;
 }

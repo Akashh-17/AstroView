@@ -42,9 +42,9 @@ export default function OrbitLine({
             <Line
                 points={points}
                 color={color}
-                lineWidth={0.5}
+                lineWidth={1.2}
                 transparent
-                opacity={0.25}
+                opacity={0.4}
                 depthWrite={false}
             />
         </group>

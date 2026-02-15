@@ -1,13 +1,18 @@
 /**
- * Toolbar.tsx — Right-side floating visibility toggles + planet quick-nav
+ * Toolbar.tsx — Right-side floating visibility toggles + zoom controls + planet quick-nav
  */
 import { useState } from 'react';
 import { useSolarSystemStore } from '../../store/solarSystemStore';
-import { PLANETS, SUN } from '../../data/planetaryData';
+import { PLANETS, SUN, NAMED_ASTEROIDS } from '../../data/planetaryData';
 
-const NAV_BODIES = [SUN, ...PLANETS];
+interface ToolbarProps {
+    variant?: 'solar-system' | 'asteroids';
+}
 
-export default function Toolbar() {
+export default function Toolbar({ variant = 'solar-system' }: ToolbarProps) {
+    const NAV_BODIES = variant === 'asteroids'
+        ? [SUN, ...PLANETS, ...NAMED_ASTEROIDS]
+        : [SUN, ...PLANETS];
     const showOrbits = useSolarSystemStore((s) => s.showOrbits);
     const showLabels = useSolarSystemStore((s) => s.showLabels);
     const showMoons = useSolarSystemStore((s) => s.showMoons);
@@ -20,6 +25,9 @@ export default function Toolbar() {
     const toggleGrid = useSolarSystemStore((s) => s.toggleGrid);
     const selectBody = useSolarSystemStore((s) => s.selectBody);
     const selectedBody = useSolarSystemStore((s) => s.selectedBody);
+    const zoomIn = useSolarSystemStore((s) => s.zoomIn);
+    const zoomOut = useSolarSystemStore((s) => s.zoomOut);
+    const resetZoom = useSolarSystemStore((s) => s.resetZoom);
 
     const [planetsOpen, setPlanetsOpen] = useState(false);
 
@@ -30,9 +38,9 @@ export default function Toolbar() {
 
     return (
         <div className="absolute right-4 top-1/2 -translate-y-1/2 z-50 pointer-events-auto flex items-start gap-2">
-            {/* Planet list flyout */}
+            {/* Planet/asteroid list flyout */}
             {planetsOpen && (
-                <div className="glass-panel rounded-xl p-1 flex flex-col gap-0.5 animate-slide-right">
+                <div className="glass-panel rounded-xl p-1 flex flex-col gap-0.5 animate-slide-right max-h-[60vh] overflow-y-auto">
                     {NAV_BODIES.map((b) => (
                         <button
                             key={b.id}
@@ -54,18 +62,28 @@ export default function Toolbar() {
             )}
 
             {/* Main toolbar */}
-            <div className="glass-panel rounded-xl p-1 flex flex-col gap-0.5">
-                <ToolBtn icon="◯" label="Orbits" active={showOrbits} onClick={toggleOrbits} />
-                <ToolBtn
-                    icon="🪐"
-                    label="Planets"
-                    active={planetsOpen}
-                    onClick={() => setPlanetsOpen((v) => !v)}
-                />
-                <ToolBtn icon="Aa" label="Labels" active={showLabels} onClick={toggleLabels} />
-                <ToolBtn icon="🌙" label="Moons" active={showMoons} onClick={toggleMoons} />
-                <ToolBtn icon="✦" label="Asteroids" active={showAsteroids} onClick={toggleAsteroids} />
-                <ToolBtn icon="⊞" label="Grid" active={showGrid} onClick={toggleGrid} />
+            <div className="flex flex-col gap-2">
+                {/* Visibility toggles */}
+                <div className="glass-panel rounded-xl p-1 flex flex-col gap-0.5">
+                    <ToolBtn icon="◯" label="Orbits" active={showOrbits} onClick={toggleOrbits} />
+                    <ToolBtn
+                        icon="🪐"
+                        label="Bodies"
+                        active={planetsOpen}
+                        onClick={() => setPlanetsOpen((v) => !v)}
+                    />
+                    <ToolBtn icon="Aa" label="Labels" active={showLabels} onClick={toggleLabels} />
+                    <ToolBtn icon="🌙" label="Moons" active={showMoons} onClick={toggleMoons} />
+                    <ToolBtn icon="☄" label="Asteroids" active={showAsteroids} onClick={toggleAsteroids} />
+                    <ToolBtn icon="⊞" label="Grid" active={showGrid} onClick={toggleGrid} />
+                </div>
+
+                {/* Zoom controls */}
+                <div className="glass-panel rounded-xl p-1 flex flex-col gap-0.5">
+                    <ToolBtn icon="+" label="Zoom In" active={false} onClick={zoomIn} />
+                    <ToolBtn icon="⊙" label="Reset" active={false} onClick={resetZoom} />
+                    <ToolBtn icon="−" label="Zoom Out" active={false} onClick={zoomOut} />
+                </div>
             </div>
         </div>
     );

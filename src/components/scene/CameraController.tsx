@@ -2,13 +2,7 @@
  * CameraController.tsx
  *
  * Manages the orbit controls and smooth camera transitions when
- * focusing on a celestial body.
- *
- * Features:
- * - OrbitControls for zoom, pan, rotate
- * - Smooth camera lerp to focused body position
- * - Zoom constraints
- * - Touch gesture support (handed by OrbitControls)
+ * focusing on a celestial body. Responds to zoom level from store.
  */
 
 import { useRef, useEffect } from 'react';
@@ -21,8 +15,13 @@ import {
     AU,
     VISUAL_RADIUS_SCALE,
     SUN_VISUAL_SCALE,
+    CLOSE_APPROACHES,
+    EARTH,
 } from '../../data/planetaryData';
 import { getBodyPosition } from '../../engine/orbitalMechanics';
+
+/** Set of asteroid IDs that are close-approach objects clustered around Earth */
+const CLOSE_APPROACH_IDS = new Set(CLOSE_APPROACHES.map((c) => c.asteroidId));
 
 // Controls ref type from drei
 type OrbitControlsRef = {
@@ -40,12 +39,14 @@ export default function CameraController() {
     const simulationTime = useSolarSystemStore((s) => s.simulationTime);
     const cameraTransitioning = useSolarSystemStore((s) => s.cameraTransitioning);
     const setCameraTransitioning = useSolarSystemStore((s) => s.setCameraTransitioning);
+    const zoomLevel = useSolarSystemStore((s) => s.zoomLevel);
 
     // Track the target position for smooth transitions
     const isTransitioning = useRef(false);
     const transitionProgress = useRef(0);
     const startCamPos = useRef(new THREE.Vector3());
     const startTargetPos = useRef(new THREE.Vector3());
+    const prevZoomLevel = useRef(1);
 
     // When focus target changes, start a transition
     useEffect(() => {
@@ -59,13 +60,27 @@ export default function CameraController() {
         }
     }, [focusTarget, cameraTransitioning, camera]);
 
+    // Respond to zoom level changes from the store
+    useEffect(() => {
+        if (zoomLevel !== prevZoomLevel.current) {
+            const ratio = prevZoomLevel.current / zoomLevel;
+            const dir = camera.position.clone().sub(controlsRef.current?.target ?? new THREE.Vector3());
+            dir.multiplyScalar(ratio);
+            camera.position.copy((controlsRef.current?.target ?? new THREE.Vector3()).clone().add(dir));
+            prevZoomLevel.current = zoomLevel;
+        }
+    }, [zoomLevel, camera]);
+
     // Smooth camera transition each frame
     useFrame((_state, delta) => {
         if (!controlsRef.current) return;
 
         // If we have a focus target, compute its position and move toward it
         if (focusTarget) {
-            const body = BODY_MAP[focusTarget];
+            // Close-approach asteroids are rendered near Earth, not at their
+            // Keplerian orbital position — fly to Earth instead.
+            const isCloseApproach = CLOSE_APPROACH_IDS.has(focusTarget);
+            const body = isCloseApproach ? EARTH : BODY_MAP[focusTarget];
             if (!body) return;
 
             let bodyPos: [number, number, number];
@@ -90,10 +105,15 @@ export default function CameraController() {
             const destTarget = new THREE.Vector3(bodyPos[0], bodyPos[1], bodyPos[2]);
 
             // Compute ideal camera distance based on body size
-            const radius = body.id === 'sun'
-                ? body.physical.radius * SUN_VISUAL_SCALE
-                : Math.max(body.physical.radius * VISUAL_RADIUS_SCALE, 0.25);
-            const cameraDistance = Math.max(radius * 8, 3);
+            const isAsteroid = body.display.category === 'asteroid';
+            // For close-approach asteroids, zoom in close to Earth to see them
+            const cameraDistance = isCloseApproach
+                ? 18
+                : body.id === 'sun'
+                    ? Math.max(body.physical.radius * SUN_VISUAL_SCALE * 8, 3)
+                    : isAsteroid
+                        ? 3
+                        : Math.max(Math.max(body.physical.radius * VISUAL_RADIUS_SCALE, 0.25) * 8, 3);
 
             if (isTransitioning.current) {
                 // Smooth transition using ease-out cubic
@@ -141,7 +161,6 @@ export default function CameraController() {
             zoomSpeed={1.2}
             rotateSpeed={0.5}
             panSpeed={0.8}
-        // Touch support is built into OrbitControls
         />
     );
 }

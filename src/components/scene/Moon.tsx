@@ -64,7 +64,7 @@ function getParentMoonConfig(parentId: string): ParentMoonConfig | null {
     const spreadFactor = parentId === 'saturn' ? 3.5 : 3.0;
 
     const moons = ALL_BODIES.filter(
-        (b) => b.parentId === parentId && b.type === 'moon',
+        (b) => b.parentId === parentId && b.display.category === 'moon',
     );
     if (moons.length === 0) return null;
 

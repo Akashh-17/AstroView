@@ -29,7 +29,6 @@ export default function SatelliteInstances() {
     const activeCategories = useSatelliteStore((s) => s.activeCategories);
     const searchQuery = useSatelliteStore((s) => s.searchQuery);
     const selectedSatelliteId = useSatelliteStore((s) => s.selectedSatelliteId);
-    const selectSatellite = useSatelliteStore((s) => s.selectSatellite);
     const focusOnSatellite = useSatelliteStore((s) => s.focusOnSatellite);
     const simulationTime = useSatelliteStore((s) => s.simulationTime);
     const setSatellites = useSatelliteStore((s) => s.setSatellites);
