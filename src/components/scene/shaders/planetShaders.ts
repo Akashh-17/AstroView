@@ -587,11 +587,14 @@ export const SST_EARTH_FRAGMENT = `
 `;
 
 /**
- * PRECIPITATION – blues/cyans for rain, white for heavy, gray/tan for dry.
+ * PRECIPITATION – NASA GPM-style overlay on real Blue Marble texture.
+ * Green/yellow/red precipitation splotches over the real Earth imagery.
+ * Uses earthMap texture for real geography, overlays rain/snow data.
  */
 export const PRECIPITATION_EARTH_FRAGMENT = `
   uniform vec3 lightDirection;
   uniform float time;
+  uniform sampler2D earthMap;
 
   varying vec3 vNormal;
   varying vec3 vPosition;
@@ -600,48 +603,100 @@ export const PRECIPITATION_EARTH_FRAGMENT = `
 
   ${NOISE_GLSL}
 
-  vec3 precipColor(float p) {
-    if (p < 0.15) return vec3(0.55, 0.45, 0.30);  // dry – tan
-    if (p < 0.35) return mix(vec3(0.55, 0.45, 0.30), vec3(0.30, 0.55, 0.35), (p - 0.15) / 0.2);
-    if (p < 0.55) return mix(vec3(0.30, 0.55, 0.35), vec3(0.10, 0.50, 0.75), (p - 0.35) / 0.2);
-    if (p < 0.75) return mix(vec3(0.10, 0.50, 0.75), vec3(0.15, 0.35, 0.85), (p - 0.55) / 0.2);
-    if (p < 0.90) return mix(vec3(0.15, 0.35, 0.85), vec3(0.60, 0.70, 0.95), (p - 0.75) / 0.15);
-    return mix(vec3(0.60, 0.70, 0.95), vec3(0.95, 0.95, 1.0), (p - 0.90) / 0.10);
+  // Rain precipitation color ramp: green → yellow → orange → red → dark red
+  vec3 rainColor(float intensity) {
+    if (intensity < 0.2) return mix(vec3(0.0, 0.40, 0.0), vec3(0.15, 0.65, 0.05), intensity / 0.2);
+    if (intensity < 0.4) return mix(vec3(0.15, 0.65, 0.05), vec3(0.55, 0.85, 0.0), (intensity - 0.2) / 0.2);
+    if (intensity < 0.6) return mix(vec3(0.55, 0.85, 0.0), vec3(0.95, 0.85, 0.0), (intensity - 0.4) / 0.2);
+    if (intensity < 0.8) return mix(vec3(0.95, 0.85, 0.0), vec3(0.95, 0.30, 0.0), (intensity - 0.6) / 0.2);
+    return mix(vec3(0.95, 0.30, 0.0), vec3(0.70, 0.0, 0.0), (intensity - 0.8) / 0.2);
   }
 
   void main() {
+    // Sample real Earth texture
+    vec3 texColor = texture2D(earthMap, vUv).rgb;
+
+    // Lighting
     vec3 lightDir = normalize(lightDirection);
     float NdotL = dot(vNormal, lightDir);
-    float ambient = 0.15;
+    float ambient = 0.08;
     float diffuse = max(NdotL, 0.0);
 
-    vec3 noisePos = vPosition * 2.5;
-    float continent = fbm(noisePos, 6);
-    float landMask = smoothstep(-0.05, 0.08, continent);
+    // Slightly darken the base Earth to make precipitation stand out
+    vec3 baseEarth = texColor * 0.70;
+
+    // === PRECIPITATION DATA LAYER ===
+    // Use LOW-frequency noise for large smooth weather blobs
+    vec3 noisePos = vPosition * 1.2;  // low multiplier = large scale
     float latitude = abs(vPosition.y) / length(vPosition);
 
-    // Precipitation pattern: ITCZ near equator, mid-lat storms, dry subtropics
-    float itcz = exp(-pow((latitude - 0.05) * 8.0, 2.0)) * 0.6;
-    float midLatRain = exp(-pow((latitude - 0.45) * 6.0, 2.0)) * 0.4;
-    float drySubtrop = exp(-pow((latitude - 0.25) * 7.0, 2.0)) * -0.3;
-    float stormNoise = fbm(noisePos * 2.5 + vec3(time * 0.03, 0.0, 0.0), 4) * 0.3;
+    // ITCZ band (heavy tropical rain near equator)
+    float itczLat = 0.05 + sin(vUv.x * 6.28 + time * 0.02) * 0.04;
+    float itcz = exp(-pow((latitude - itczLat) * 6.0, 2.0)) * 0.65;
 
-    float precip = clamp(0.3 + itcz + midLatRain + drySubtrop + stormNoise, 0.0, 1.0);
+    // Mid-latitude storm belts (40-60 deg)
+    float midLatStorm = exp(-pow((latitude - 0.50) * 4.5, 2.0)) * 0.45;
 
-    vec3 surfaceColor = precipColor(precip);
+    // Dry subtropical zones (~25 deg, Sahara, Australian outback)
+    float drySubtrop = exp(-pow((latitude - 0.25) * 5.5, 2.0)) * -0.45;
 
-    float edgeMask = smoothstep(0.0, 0.06, abs(continent - 0.015));
-    surfaceColor *= mix(0.7, 1.0, edgeMask);
+    // Large-scale weather system blobs — very low frequency, only 2-3 octaves
+    float weather1 = fbm(noisePos * 0.8 + vec3(time * 0.008, 0.0, time * 0.005), 3);
+    float weather2 = snoise(noisePos * 1.5 + vec3(time * -0.006, time * 0.01, 0.0));
 
-    float lighting = ambient + diffuse * 0.7;
+    // Combine: base climatology + weather systems
+    float rawPrecip = 0.20 + itcz + midLatStorm + drySubtrop + weather1 * 0.40 + weather2 * 0.18;
+
+    // Create LARGE smooth precipitation patches using low-freq noise
+    float patchNoise = fbm(noisePos * 1.0 + 50.0, 2);
+    float patchMask = smoothstep(-0.05, 0.30, patchNoise);
+
+    // Final precipitation intensity
+    float precip = clamp(rawPrecip * patchMask, 0.0, 1.0);
+
+    // Visibility threshold — sharper cutoff for clean patch edges
+    float precipAlpha = smoothstep(0.22, 0.38, precip);
+
+    // Intensity within visible areas
+    float precipIntensity = clamp((precip - 0.22) / 0.65, 0.0, 1.0);
+
+    // Get precipitation overlay color
+    vec3 precipOverlay = rainColor(precipIntensity);
+
+    // Add slight internal texture variation so patches aren't flat
+    float detail = snoise(vPosition * 6.0 + 200.0) * 0.08;
+    precipOverlay += detail;
+
+    // Blend precipitation over the base Earth
+    float overlayOpacity = precipAlpha * mix(0.60, 0.88, precipIntensity);
+    vec3 surfaceColor = mix(baseEarth, precipOverlay, overlayOpacity);
+
+    // === LIGHTING ===
+    float lighting = ambient + diffuse * 0.85;
     vec3 litColor = surfaceColor * lighting;
 
+    // Specular on water where no precipitation
     vec3 viewDir = normalize(cameraPosition - vWorldPosition);
-    float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
-    litColor += vec3(0.20, 0.45, 0.85) * pow(rim, 3.5) * 0.2;
+    float lum = dot(texColor, vec3(0.299, 0.587, 0.114));
+    float blueRatio = texColor.b / (lum + 0.001);
+    float waterMask = smoothstep(1.1, 1.6, blueRatio);
+    vec3 halfVec = normalize(lightDir + viewDir);
+    float specAngle = max(dot(vNormal, halfVec), 0.0);
+    float specular = pow(specAngle, 64.0) * waterMask * (1.0 - precipAlpha) * 0.3;
+    litColor += vec3(specular);
 
-    float terminator = smoothstep(-0.1, 0.15, NdotL);
-    vec3 finalColor = mix(surfaceColor * 0.3, litColor, terminator);
+    // Atmospheric rim glow
+    float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
+    float rimGlow = pow(rim, 3.5);
+    litColor += vec3(0.25, 0.50, 0.90) * rimGlow * 0.30;
+
+    // Day/night transition
+    float terminator = smoothstep(-0.08, 0.12, NdotL);
+    vec3 nightColor = surfaceColor * 0.08;
+    float nightRim = pow(rim, 4.0) * (1.0 - terminator);
+    nightColor += vec3(0.12, 0.20, 0.40) * nightRim * 0.15;
+
+    vec3 finalColor = mix(nightColor, litColor, terminator);
 
     gl_FragColor = vec4(finalColor, 1.0);
   }
@@ -701,6 +756,116 @@ export const OZONE_EARTH_FRAGMENT = `
 
     float terminator = smoothstep(-0.1, 0.15, NdotL);
     vec3 finalColor = mix(surfaceColor * 0.3, litColor, terminator);
+
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;
+
+/**
+ * SOIL MOISTURE – NASA SMAP-style overlay on real Blue Marble texture.
+ * Yellow/orange (dry) → green (moderate) → cyan/blue (wet) on LAND ONLY.
+ * Ocean areas are dark/black. Matches NASA "Eyes on Earth" soil moisture viz.
+ */
+export const SOIL_MOISTURE_EARTH_FRAGMENT = `
+  uniform vec3 lightDirection;
+  uniform float time;
+  uniform sampler2D earthMap;
+
+  varying vec3 vNormal;
+  varying vec3 vPosition;
+  varying vec2 vUv;
+  varying vec3 vWorldPosition;
+
+  ${NOISE_GLSL}
+
+  // Soil moisture color ramp: dark brown/orange (dry) → yellow → green → cyan → blue (wet)
+  vec3 soilColor(float m) {
+    if (m < 0.10) return mix(vec3(0.45, 0.22, 0.05), vec3(0.70, 0.40, 0.05), m / 0.10);
+    if (m < 0.25) return mix(vec3(0.70, 0.40, 0.05), vec3(0.90, 0.78, 0.10), (m - 0.10) / 0.15);
+    if (m < 0.40) return mix(vec3(0.90, 0.78, 0.10), vec3(0.50, 0.80, 0.15), (m - 0.25) / 0.15);
+    if (m < 0.55) return mix(vec3(0.50, 0.80, 0.15), vec3(0.10, 0.70, 0.40), (m - 0.40) / 0.15);
+    if (m < 0.70) return mix(vec3(0.10, 0.70, 0.40), vec3(0.05, 0.55, 0.70), (m - 0.55) / 0.15);
+    if (m < 0.85) return mix(vec3(0.05, 0.55, 0.70), vec3(0.05, 0.30, 0.80), (m - 0.70) / 0.15);
+    return mix(vec3(0.05, 0.30, 0.80), vec3(0.10, 0.10, 0.55), (m - 0.85) / 0.15);
+  }
+
+  void main() {
+    // Sample real Earth texture
+    vec3 texColor = texture2D(earthMap, vUv).rgb;
+
+    // Lighting
+    vec3 lightDir = normalize(lightDirection);
+    float NdotL = dot(vNormal, lightDir);
+    float ambient = 0.12;
+    float diffuse = max(NdotL, 0.0);
+
+    // Detect land vs ocean from texture
+    float lum = dot(texColor, vec3(0.299, 0.587, 0.114));
+    float blueRatio = texColor.b / (lum + 0.001);
+    float landMask = 1.0 - smoothstep(1.1, 1.55, blueRatio);
+
+    // Ice/snow detection
+    float maxC = max(texColor.r, max(texColor.g, texColor.b));
+    float minC = min(texColor.r, min(texColor.g, texColor.b));
+    float sat = (maxC - minC) / (maxC + 0.001);
+    float iceMask = smoothstep(0.55, 0.75, lum) * (1.0 - smoothstep(0.15, 0.35, sat));
+
+    float latitude = abs(vPosition.y) / length(vPosition);
+
+    // === SOIL MOISTURE DATA ===
+    vec3 noisePos = vPosition * 1.5;
+
+    // Base moisture: higher near equator/tropics, lower in deserts
+    float tropicalWet = exp(-pow((latitude - 0.05) * 5.0, 2.0)) * 0.35;
+    float midLatWet = exp(-pow((latitude - 0.45) * 4.0, 2.0)) * 0.25;
+    // Dry subtropical belt (Sahara, Arabian, Australian deserts)
+    float dryBelt = exp(-pow((latitude - 0.22) * 5.5, 2.0)) * -0.35;
+
+    // Regional variation — large smooth features
+    float regional = fbm(noisePos * 0.8 + 30.0, 3) * 0.30;
+    // Medium detail for local variation
+    float local = snoise(noisePos * 2.0 + 70.0) * 0.15;
+
+    float moisture = clamp(0.40 + tropicalWet + midLatWet + dryBelt + regional + local, 0.0, 1.0);
+
+    // Get soil moisture color
+    vec3 moistureColor = soilColor(moisture);
+
+    // On land: show soil moisture data. On ocean: dark/black
+    vec3 oceanColor = vec3(0.01, 0.01, 0.03);
+    vec3 surfaceColor = mix(oceanColor, moistureColor, landMask);
+
+    // Ice caps: gray-white, no soil data
+    surfaceColor = mix(surfaceColor, vec3(0.40, 0.45, 0.50), iceMask * 0.7);
+
+    // === COASTLINE BORDERS ===
+    // Sobel edge detection for land/ocean boundary
+    float ts = 0.0015;
+    float tL = dot(texture2D(earthMap, vUv + vec2(-ts, 0.0)).rgb, vec3(0.299, 0.587, 0.114));
+    float tR = dot(texture2D(earthMap, vUv + vec2( ts, 0.0)).rgb, vec3(0.299, 0.587, 0.114));
+    float tU = dot(texture2D(earthMap, vUv + vec2(0.0,  ts)).rgb, vec3(0.299, 0.587, 0.114));
+    float tD = dot(texture2D(earthMap, vUv + vec2(0.0, -ts)).rgb, vec3(0.299, 0.587, 0.114));
+    float edge = length(vec2(tR - tL, tU - tD));
+    float borderLine = smoothstep(0.03, 0.12, edge);
+    surfaceColor = mix(surfaceColor, vec3(0.0), borderLine * 0.6);
+
+    // === LIGHTING ===
+    float lighting = ambient + diffuse * 0.75;
+    vec3 litColor = surfaceColor * lighting;
+
+    // Atmospheric rim
+    vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+    float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
+    float rimGlow = pow(rim, 3.5);
+    litColor += vec3(0.20, 0.40, 0.15) * rimGlow * 0.20;
+
+    // Day/night
+    float terminator = smoothstep(-0.08, 0.12, NdotL);
+    vec3 nightColor = surfaceColor * 0.06;
+    float nightRim = pow(rim, 4.0) * (1.0 - terminator);
+    nightColor += vec3(0.10, 0.15, 0.08) * nightRim * 0.1;
+
+    vec3 finalColor = mix(nightColor, litColor, terminator);
 
     gl_FragColor = vec4(finalColor, 1.0);
   }

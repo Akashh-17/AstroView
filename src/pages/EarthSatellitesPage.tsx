@@ -146,7 +146,7 @@ export default function EarthSatellitesPage() {
                             <SatelliteInstances />
                             <SatelliteOrbitLine />
                             <SatelliteOrbits />
-                            <OrbitalReferencePlanes />
+                            {!activeVS?.hasEarthOverlay && <OrbitalReferencePlanes />}
                         </Suspense>
                     </Canvas>
 

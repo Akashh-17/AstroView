@@ -10,6 +10,7 @@ import { useRef, useMemo, useCallback } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useSatelliteStore } from '../../store/satelliteStore';
+import { useLearningStore } from '../../store/learningStore';
 import { propagateSatellite } from '../../engine/satelliteService';
 import { SATELLITE_CATEGORIES, FEATURED_SATELLITE_NAMES, VITAL_SIGN_SATELLITES } from '../../data/satelliteData';
 import { Html } from '@react-three/drei';
@@ -33,6 +34,8 @@ export default function SatelliteInstances() {
     const simulationTime = useSatelliteStore((s) => s.simulationTime);
     const setSatellites = useSatelliteStore((s) => s.setSatellites);
     const activeVitalSign = useSatelliteStore((s) => s.activeVitalSign);
+    const learningPhase = useLearningStore((s) => s.phase);
+    const isLearningActive = learningPhase !== 'idle';
 
     // Filter satellites based on active categories, search, and vital sign
     const filtered = useMemo(() => {
@@ -178,7 +181,7 @@ export default function SatelliteInstances() {
                     position={sat.position}
                     center
                     distanceFactor={20}
-                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                    style={{ pointerEvents: 'none', userSelect: 'none', display: isLearningActive ? 'none' : undefined }}
                 >
                     <div style={{
                         color: categoryColorMap[sat.category]?.getStyle() || '#fff',
@@ -199,7 +202,7 @@ export default function SatelliteInstances() {
             ))}
 
             {/* Selected satellite label */}
-            {selectedSat && selectedPos && !FEATURED_SATELLITE_NAMES.has(selectedSat.name) && (
+            {selectedSat && selectedPos && !FEATURED_SATELLITE_NAMES.has(selectedSat.name) && !isLearningActive && (
                 <Html
                     position={selectedPos}
                     center

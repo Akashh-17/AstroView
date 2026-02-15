@@ -189,14 +189,12 @@ export type VitalSignId =
     | 'satellites_now'
     | 'visible_earth'
     | 'air_temperature'
-    | 'carbon_dioxide'
-    | 'carbon_monoxide'
-    | 'chlorophyll'
     | 'precipitation'
     | 'sea_level'
     | 'sea_surface_temp'
     | 'soil_moisture'
-    | 'ozone';
+    | 'ozone'
+    | 'water_storage';
 
 export interface VitalSign {
     id: VitalSignId;
@@ -239,36 +237,6 @@ export const VITAL_SIGNS: VitalSign[] = [
         color: '#FF6B35',
         unit: 'C',
         description: 'Global air temperature measured by infrared sounders',
-        hasEarthOverlay: true,
-    },
-    {
-        id: 'carbon_dioxide',
-        label: 'Carbon Dioxide',
-        shortLabel: 'CO2',
-        icon: 'CO2',
-        color: '#FFD93D',
-        unit: 'ppm',
-        description: 'Atmospheric CO2 concentration from OCO-2/3 missions',
-        hasEarthOverlay: true,
-    },
-    {
-        id: 'carbon_monoxide',
-        label: 'Carbon Monoxide',
-        shortLabel: 'CO',
-        icon: 'CO',
-        color: '#FF8C42',
-        unit: 'ppb',
-        description: 'Tropospheric CO from biomass burning and industry',
-        hasEarthOverlay: true,
-    },
-    {
-        id: 'chlorophyll',
-        label: 'Chlorophyll',
-        shortLabel: 'Chloro',
-        icon: 'LEAF',
-        color: '#43B581',
-        unit: 'mg/m3',
-        description: 'Ocean chlorophyll-a concentration indicating phytoplankton',
         hasEarthOverlay: true,
     },
     {
@@ -321,6 +289,16 @@ export const VITAL_SIGNS: VitalSign[] = [
         description: 'Total column ozone measured by limb and nadir sounders',
         hasEarthOverlay: true,
     },
+    {
+        id: 'water_storage',
+        label: 'Water Storage',
+        shortLabel: 'Water',
+        icon: 'WATER',
+        color: '#2196F3',
+        unit: 'cm',
+        description: 'Terrestrial water storage anomalies from GRACE-FO gravity measurements',
+        hasEarthOverlay: true,
+    },
 ];
 
 /**
@@ -336,16 +314,9 @@ export const VITAL_SIGN_SATELLITES: Record<VitalSignId, string[]> = {
         'SUOMI NPP', 'JPSS-1', 'SENTINEL-3A', 'SENTINEL-3B',
         'FY-3D', 'FY-3E', 'HIMAWARI-8', 'HIMAWARI-9',
     ],
-    carbon_dioxide: [
-        'OCO-2', 'GOSAT', 'GOSAT-2', 'SENTINEL-5P',
-        'AQUA', 'TERRA', 'NOAA 20',
-    ],
-    carbon_monoxide: [
-        'SENTINEL-5P', 'TERRA', 'AQUA', 'METOP-B', 'METOP-C',
-    ],
-    chlorophyll: [
-        'AQUA', 'TERRA', 'SENTINEL-3A', 'SENTINEL-3B',
-        'SUOMI NPP', 'NOAA 20', 'LANDSAT 9', 'LANDSAT 8',
+    water_storage: [
+        'GRACE-FO 1', 'GRACE-FO 2', 'SENTINEL-6A', 'JASON-3',
+        'CRYOSAT 2', 'SARAL', 'SMAP',
     ],
     precipitation: [
         'GPM-CORE', 'NOAA 20', 'NOAA 19', 'NOAA 18',
