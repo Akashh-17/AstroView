@@ -112,11 +112,7 @@ export default function HomePage() {
                 </div>
 
                 <h1 className="text-6xl md:text-8xl font-bold tracking-tight text-white mb-4 animate-fade-in" style={{ animationDelay: '200ms' }}>
-<<<<<<< HEAD
-                    Astrolens <span className="bg-gradient-to-r from-[#4A90D9] to-[#6BB5FF] bg-clip-text text-transparent">Eyes</span>
-=======
                     <span className="bg-gradient-to-r from-[#4A90D9] to-[#6BB5FF] bg-clip-text text-transparent">Astrolens</span>
->>>>>>> 82c6cca67ea55cc803b8afe7926ef6c0bd8549de
                 </h1>
 
                 <p className="max-w-2xl text-base md:text-lg text-white/50 leading-relaxed mb-16 animate-fade-in" style={{ animationDelay: '400ms' }}>
@@ -138,48 +134,13 @@ export default function HomePage() {
                         Click any of these modules to start exploring
                     </p>
 
-<<<<<<< HEAD
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                    <ProductCard
-                        title="Eyes on the Solar System"
-                        subtitle="Real-Time 3D Data Visualization: Past, Present, and Future"
-                        gradient="bg-gradient-to-br from-[#1a0a2e] via-[#2d1b4e] to-[#0a1628]"
-                        icon="🪐"
-                        to="/solar-system"
-                        delay={100}
-                    />
-                    <ProductCard
-                        title="Eyes on Asteroids"
-                        subtitle="Tracking near-Earth objects in real-time 3D"
-                        gradient="bg-gradient-to-br from-[#1a1a0a] via-[#2a2510] to-[#0a0a0a]"
-                        icon="☄️"
-                        to="/asteroids"
-                        delay={200}
-                    />
-                    <ProductCard
-                        title="Eyes on the Earth"
-                        subtitle="See the planet's vital signs in 3D"
-                        gradient="bg-gradient-to-br from-[#0a1e28] via-[#0b2d3e] to-[#0a1218]"
-                        icon="🌍"
-                        to="/solar-system"
-                        delay={300}
-                    />
-                    <ProductCard
-                        title="Eyes on Exoplanets"
-                        subtitle="Explore alien worlds beyond our solar system"
-                        gradient="bg-gradient-to-br from-[#1a0a1e] via-[#2d0a2e] to-[#0a0818]"
-                        icon="✨"
-                        to="/solar-system"
-                        delay={400}
-                    />
-=======
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
                         <ProductCard
                             title="Solar System"
                             subtitle="Real-Time 3D Data Visualization: Past, Present, and Future"
                             gradient="bg-gradient-to-br from-[#1a0a2e] via-[#2d1b4e] to-[#0a1628]"
                             icon="🪐"
-                            onClick={goTo('/solar-system')}
+                            to="/solar-system"
                             delay={100}
                         />
                         <ProductCard
@@ -187,7 +148,7 @@ export default function HomePage() {
                             subtitle="Tracking near-Earth objects in real-time 3D"
                             gradient="bg-gradient-to-br from-[#1a1a0a] via-[#2a2510] to-[#0a0a0a]"
                             icon="☄️"
-                            onClick={goTo('/asteroids')}
+                            to="/asteroids"
                             delay={200}
                         />
                         <ProductCard
@@ -195,11 +156,10 @@ export default function HomePage() {
                             subtitle="Track satellites and space activity orbiting our planet in real-time"
                             gradient="bg-gradient-to-br from-[#0d1b2a] via-[#1a2332] to-[#0a1520]"
                             icon="🛰️"
-                            onClick={goTo('/earth-satellites')}
+                            to="/earth-satellites"
                             delay={300}
                         />
                     </div>
->>>>>>> 82c6cca67ea55cc803b8afe7926ef6c0bd8549de
                 </div>
             </section>
         </div>
