@@ -12,6 +12,10 @@ interface SatelliteState {
     satellites: SatelliteInfo[];
     /** Currently selected satellite ID */
     selectedSatelliteId: string | null;
+    /** Satellite the camera is flying toward (null = free orbit) */
+    focusSatelliteId: string | null;
+    /** Whether the camera is mid-transition */
+    cameraTransitioning: boolean;
     /** Active category filters (empty = show all) */
     activeCategories: Set<SatelliteCategoryId>;
     /** Search query */
@@ -31,6 +35,8 @@ interface SatelliteState {
     // ── Actions ──
     setSatellites: (sats: SatelliteInfo[]) => void;
     selectSatellite: (id: string | null) => void;
+    focusOnSatellite: (id: string | null) => void;
+    setCameraTransitioning: (v: boolean) => void;
     toggleCategory: (id: SatelliteCategoryId) => void;
     setSearchQuery: (q: string) => void;
     setLoading: (v: boolean) => void;
@@ -45,6 +51,8 @@ interface SatelliteState {
 export const useSatelliteStore = create<SatelliteState>((set) => ({
     satellites: [],
     selectedSatelliteId: null,
+    focusSatelliteId: null,
+    cameraTransitioning: false,
     activeCategories: new Set<SatelliteCategoryId>(),
     searchQuery: '',
     isLoading: true,
@@ -56,6 +64,8 @@ export const useSatelliteStore = create<SatelliteState>((set) => ({
 
     setSatellites: (sats) => set({ satellites: sats }),
     selectSatellite: (id) => set({ selectedSatelliteId: id }),
+    focusOnSatellite: (id) => set({ focusSatelliteId: id, cameraTransitioning: !!id, selectedSatelliteId: id }),
+    setCameraTransitioning: (v) => set({ cameraTransitioning: v }),
     toggleCategory: (id) =>
         set((s) => {
             const next = new Set(s.activeCategories);

@@ -30,6 +30,7 @@ export default function SatelliteInstances() {
     const searchQuery = useSatelliteStore((s) => s.searchQuery);
     const selectedSatelliteId = useSatelliteStore((s) => s.selectedSatelliteId);
     const selectSatellite = useSatelliteStore((s) => s.selectSatellite);
+    const focusOnSatellite = useSatelliteStore((s) => s.focusOnSatellite);
     const simulationTime = useSatelliteStore((s) => s.simulationTime);
     const setSatellites = useSatelliteStore((s) => s.setSatellites);
 
@@ -141,13 +142,13 @@ export default function SatelliteInstances() {
         }
     });
 
-    // Click handler
+    // Click handler — select & zoom to satellite
     const handleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
         e.stopPropagation();
         if (e.instanceId !== undefined && e.instanceId < filtered.length) {
-            selectSatellite(filtered[e.instanceId].id);
+            focusOnSatellite(filtered[e.instanceId].id);
         }
-    }, [filtered, selectSatellite]);
+    }, [filtered, focusOnSatellite]);
 
     return (
         <>

@@ -2,14 +2,58 @@
  * SatelliteInfoPanel.tsx
  *
  * Right panel showing detailed info about the selected satellite,
- * including real-time tracking data, orbital parameters, mission
- * metadata, and TLE data.
+ * including an image, real-time tracking data, orbital parameters,
+ * mission metadata, and TLE data.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { twoline2satrec } from 'satellite.js';
 import { useSatelliteStore } from '../../store/satelliteStore';
 import { SATELLITE_CATEGORIES } from '../../data/satelliteData';
+
+/* ── satellite images (NASA public domain / Wikimedia Commons) ───────── */
+const SAT_IMAGES: Record<string, string> = {
+    'ISS (ZARYA)':
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/International_Space_Station_after_undocking_of_STS-132.jpg/800px-International_Space_Station_after_undocking_of_STS-132.jpg',
+    'CSS (TIANHE)':
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Chinese_Space_Station_in_2023-10.png/800px-Chinese_Space_Station_in_2023-10.png',
+    HST:
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/HST-SM4.jpeg/800px-HST-SM4.jpeg',
+    TERRA:
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Terra_satellite.jpg/800px-Terra_satellite.jpg',
+    AQUA:
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Aqua_satellite.jpg/800px-Aqua_satellite.jpg',
+    'LANDSAT 9':
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Landsat_9_-_Mission_Patch.png/800px-Landsat_9_-_Mission_Patch.png',
+    'GOES 16':
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/GOES-R_spacecraft_model.png/800px-GOES-R_spacecraft_model.png',
+    'GOES 18':
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/GOES-R_spacecraft_model.png/800px-GOES-R_spacecraft_model.png',
+    JWST:
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/James_Webb_Space_Telescope_2009_top.jpg/800px-James_Webb_Space_Telescope_2009_top.jpg',
+};
+
+/* stock fallback images for categories without specific images */
+const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
+    stations:
+        'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=600&q=80',
+    weather:
+        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&q=80',
+    navigation:
+        'https://images.unsplash.com/photo-1516849841032-87cbac4d88f7?w=600&q=80',
+    communications:
+        'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=600&q=80',
+    scientific:
+        'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=600&q=80',
+    starlink:
+        'https://images.unsplash.com/photo-1516849841032-87cbac4d88f7?w=600&q=80',
+    earth_observation:
+        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&q=80',
+    military:
+        'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=600&q=80',
+    debris:
+        'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=600&q=80',
+};
 
 /* ── Notable satellite metadata ────────────────────────────────────────── */
 const MISSION_META: Record<
@@ -99,6 +143,7 @@ export default function SatelliteInfoPanel() {
     const satellites = useSatelliteStore((s) => s.satellites);
     const selectedId = useSatelliteStore((s) => s.selectedSatelliteId);
     const selectSatellite = useSatelliteStore((s) => s.selectSatellite);
+    const focusOnSatellite = useSatelliteStore((s) => s.focusOnSatellite);
 
     const sat = useMemo(() => {
         if (!selectedId) return null;
@@ -157,6 +202,13 @@ export default function SatelliteInfoPanel() {
     }, [sat]);
 
     const meta = sat ? MISSION_META[sat.name] || null : null;
+    const imageUrl = sat
+        ? SAT_IMAGES[sat.name] ||
+          CATEGORY_FALLBACK_IMAGES[sat.category] ||
+          'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=600&q=80'
+        : null;
+
+    const [imgError, setImgError] = useState(false);
 
     if (!sat) {
         return (
@@ -196,13 +248,42 @@ export default function SatelliteInfoPanel() {
                         </p>
                     </div>
                     <button
-                        onClick={() => selectSatellite(null)}
+                        onClick={() => { selectSatellite(null); focusOnSatellite(null); }}
                         className="text-white/20 hover:text-white/60 transition-colors text-lg leading-none"
                     >
                         ×
                     </button>
                 </div>
             </div>
+
+            {/* Satellite image */}
+            {imageUrl && !imgError && (
+                <>
+                    <div className="h-px bg-white/[0.06] mx-5" />
+                    <div className="relative mx-4 mt-3 mb-2 rounded-lg overflow-hidden" style={{ height: '140px' }}>
+                        <img
+                            src={imageUrl}
+                            alt={sat.name}
+                            onError={() => setImgError(true)}
+                            className="w-full h-full object-cover"
+                            style={{ filter: 'brightness(0.85) contrast(1.1)' }}
+                        />
+                        {/* gradient overlay at bottom */}
+                        <div
+                            className="absolute inset-x-0 bottom-0 h-12"
+                            style={{
+                                background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)',
+                            }}
+                        />
+                        {/* image caption if it is a known satellite */}
+                        {SAT_IMAGES[sat.name] && (
+                            <span className="absolute bottom-2 left-3 text-[8px] text-white/40 tracking-wide">
+                                NASA / Public Domain
+                            </span>
+                        )}
+                    </div>
+                </>
+            )}
 
             {/* Mission metadata (if known) */}
             {meta && (
