@@ -2,10 +2,10 @@
  * CelestialEventsPage.tsx
  *
  * Location-based celestial events module with comprehensive visual enhancements
- * Features: Animated starfield, smooth page load sequence, polished interactions
+ * Features: Animated starfield, smooth page load sequence, polished interactions, event reminders
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, LocateFixed, ArrowLeft, Star, Moon, Sun, Sparkles, Globe, Eye, Info } from 'lucide-react';
 import {
@@ -14,6 +14,9 @@ import {
     type CelestialEvent,
     type VisibilityLevel,
 } from '../data/celestialEventsData';
+import ReminderToggle from '../components/celestial/ReminderToggle';
+import Toast from '../components/celestial/Toast';
+import { saveReminder, removeReminder, isReminderSet } from '../utils/reminderStorage';
 
 // ─── Icon Map ────────────────────────────────────────────────────────────────
 function EventIcon({ type }: { type: CelestialEvent['icon'] }) {
@@ -74,7 +77,17 @@ function VisibilityBadge({ level }: { level: VisibilityLevel }) {
 }
 
 // ─── Event Card ──────────────────────────────────────────────────────────────
-function EventCard({ event, index }: { event: CelestialEvent; index: number }) {
+function EventCard({
+    event,
+    index,
+    isReminderActive,
+    onToggleReminder
+}: {
+    event: CelestialEvent;
+    index: number;
+    isReminderActive: boolean;
+    onToggleReminder: (active: boolean) => void;
+}) {
     return (
         <div
             className="event-card group relative rounded-2xl p-8 transition-all duration-300"
@@ -120,6 +133,17 @@ function EventCard({ event, index }: { event: CelestialEvent; index: number }) {
             <p className="text-sm leading-relaxed mt-5" style={{ color: '#AAAAAA', lineHeight: '1.8' }}>
                 {event.description}
             </p>
+
+            {/* Reminder Toggle */}
+            <div className="mt-6 pt-6 border-t border-white/5">
+                <ReminderToggle
+                    eventId={event.id}
+                    eventName={event.name}
+                    eventDate={event.date}
+                    isActive={isReminderActive}
+                    onToggle={onToggleReminder}
+                />
+            </div>
         </div>
     );
 }
@@ -132,6 +156,46 @@ export default function CelestialEventsPage() {
     const [hemisphere, setHemisphere] = useState<'northern' | 'southern' | null>(null);
     const [detecting, setDetecting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Reminder system state
+    const [reminders, setReminders] = useState<Record<string, boolean>>({});
+    const [toast, setToast] = useState<{ message: string; detail?: string } | null>(null);
+
+    // Load reminders from localStorage on mount
+    useEffect(() => {
+        if (events) {
+            const reminderMap: Record<string, boolean> = {};
+            events.forEach(event => {
+                reminderMap[event.id] = isReminderSet(event.id);
+            });
+            setReminders(reminderMap);
+        }
+    }, [events]);
+
+    const handleToggleReminder = (event: CelestialEvent, active: boolean) => {
+        if (active) {
+            // Save reminder
+            saveReminder({
+                eventId: event.id,
+                eventName: event.name,
+                eventDate: event.date,
+            });
+            setToast({
+                message: 'Reminder Set!',
+                detail: `You'll be notified about ${event.name} on ${event.date}`,
+            });
+        } else {
+            // Remove reminder
+            removeReminder(event.id);
+            setToast({
+                message: 'Reminder Removed',
+                detail: `${event.name} reminder has been cleared`,
+            });
+        }
+
+        // Update local state
+        setReminders(prev => ({ ...prev, [event.id]: active }));
+    };
 
     const processLocation = (lat: number) => {
         const h = lat >= 0 ? 'northern' : 'southern';
@@ -301,6 +365,43 @@ export default function CelestialEventsPage() {
                     }
                 }
                 
+                @keyframes nebulaDrift {
+                    0%, 100% {
+                        transform: translateX(0) translateY(0);
+                    }
+                    50% {
+                        transform: translateX(100px) translateY(-50px);
+                    }
+                }
+                
+                @keyframes nebulaFloat {
+                    0%, 100% {
+                        transform: translateY(0) scale(1);
+                        opacity: 0.3;
+                    }
+                    50% {
+                        transform: translateY(-80px) scale(1.1);
+                        opacity: 0.5;
+                    }
+                }
+                
+                @keyframes particleDrift {
+                    0% {
+                        transform: translate(0, 0);
+                        opacity: 0;
+                    }
+                    10% {
+                        opacity: 0.6;
+                    }
+                    90% {
+                        opacity: 0.6;
+                    }
+                    100% {
+                        transform: translate(200px, -300px);
+                        opacity: 0;
+                    }
+                }
+                
                 .nav-bar {
                     animation: slideDown 600ms ease-out 200ms backwards;
                 }
@@ -412,6 +513,72 @@ export default function CelestialEventsPage() {
 
                 {/* Animated Starfield Background */}
                 <div className="fixed inset-0 pointer-events-none overflow-hidden">
+                    {/* Nebula Clouds - Slow Drifting */}
+                    <div className="absolute inset-0">
+                        {/* Nebula 1 - Cyan */}
+                        <div
+                            className="absolute"
+                            style={{
+                                top: '10%',
+                                left: '20%',
+                                width: '600px',
+                                height: '600px',
+                                background: 'radial-gradient(circle, rgba(0, 217, 255, 0.15) 0%, transparent 70%)',
+                                filter: 'blur(80px)',
+                                animation: 'nebulaDrift 40s ease-in-out infinite',
+                            }}
+                        />
+                        {/* Nebula 2 - Purple */}
+                        <div
+                            className="absolute"
+                            style={{
+                                top: '50%',
+                                right: '15%',
+                                width: '500px',
+                                height: '500px',
+                                background: 'radial-gradient(circle, rgba(138, 43, 226, 0.12) 0%, transparent 70%)',
+                                filter: 'blur(90px)',
+                                animation: 'nebulaFloat 50s ease-in-out infinite',
+                                animationDelay: '5s',
+                            }}
+                        />
+                        {/* Nebula 3 - Blue */}
+                        <div
+                            className="absolute"
+                            style={{
+                                bottom: '20%',
+                                left: '10%',
+                                width: '700px',
+                                height: '700px',
+                                background: 'radial-gradient(circle, rgba(74, 158, 255, 0.1) 0%, transparent 70%)',
+                                filter: 'blur(100px)',
+                                animation: 'nebulaDrift 60s ease-in-out infinite reverse',
+                                animationDelay: '10s',
+                            }}
+                        />
+                    </div>
+
+                    {/* Drifting Particles */}
+                    <div className="absolute inset-0">
+                        {[...Array(15)].map((_, i) => (
+                            <div
+                                key={`particle-${i}`}
+                                className="absolute"
+                                style={{
+                                    top: `${Math.random() * 100}%`,
+                                    left: `${Math.random() * 100}%`,
+                                    width: '3px',
+                                    height: '3px',
+                                    background: 'rgba(255, 255, 255, 0.6)',
+                                    borderRadius: '50%',
+                                    boxShadow: '0 0 4px rgba(255, 255, 255, 0.8)',
+                                    animation: `particleDrift ${20 + Math.random() * 20}s linear infinite`,
+                                    animationDelay: `${Math.random() * 10}s`,
+                                }}
+                            />
+                        ))}
+                    </div>
+
                     {/* Star Layer 1 - Background */}
                     <div className="star-layer-1 absolute inset-0">
                         {[...Array(50)].map((_, i) => (
@@ -764,13 +931,28 @@ export default function CelestialEventsPage() {
                             {/* Event Cards Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                                 {events.map((event, index) => (
-                                    <EventCard key={event.id} event={event} index={index} />
+                                    <EventCard
+                                        key={event.id}
+                                        event={event}
+                                        index={index}
+                                        isReminderActive={reminders[event.id] || false}
+                                        onToggleReminder={(active) => handleToggleReminder(event, active)}
+                                    />
                                 ))}
                             </div>
                         </div>
                     )}
                 </main>
             </div>
+
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    detail={toast.detail}
+                    onClose={() => setToast(null)}
+                />
+            )}
         </>
     );
 }
