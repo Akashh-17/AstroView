@@ -8,6 +8,7 @@ import { PLANETS, MOONS, SUN, NAMED_ASTEROIDS, CLOSE_APPROACHES } from '../../da
 import type { CloseApproach } from '../../data/planetaryData';
 import { useSolarSystemStore } from '../../store/solarSystemStore';
 import { useUIStore } from '../../store/uiStore';
+import AsteroidLearnMore from './AsteroidLearnMore';
 
 interface LeftSidebarProps {
     variant?: 'solar-system' | 'asteroids';
@@ -74,6 +75,14 @@ function ApproachCard({ approach }: { approach: CloseApproach }) {
                     </div>
                 </div>
             </div>
+
+            {/* Learn More */}
+            <AsteroidLearnMore
+                asteroidId={approach.asteroidId}
+                asteroidName={approach.asteroidName}
+                accent={approach.isHazardous ? '#EF4444' : '#4A90D9'}
+                compact
+            />
         </div>
     );
 }

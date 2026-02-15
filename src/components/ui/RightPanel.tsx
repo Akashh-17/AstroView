@@ -4,6 +4,7 @@
  */
 import { BODY_MAP } from '../../data/planetaryData';
 import { useSolarSystemStore } from '../../store/solarSystemStore';
+import AsteroidLearnMore from './AsteroidLearnMore';
 
 /* ── helpers ────────────────────────────────────────────────────── */
 
@@ -138,6 +139,15 @@ export default function RightPanel() {
           <StatSection title="Satellites" accent={body.display.color}>
             <StatRow label="Known Moons" value={p.numberOfMoons.toString()} />
           </StatSection>
+        )}
+
+        {/* Learn More — for asteroids, show educational info from NASA */}
+        {body.display.category === 'asteroid' && (
+          <AsteroidLearnMore
+            asteroidId={body.id}
+            asteroidName={body.name}
+            accent={body.display.color}
+          />
         )}
 
         {/* Track button */}

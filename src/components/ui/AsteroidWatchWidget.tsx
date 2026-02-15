@@ -8,6 +8,7 @@ import { useState, useCallback } from 'react';
 import { CLOSE_APPROACHES } from '../../data/planetaryData';
 import type { CloseApproach } from '../../data/planetaryData';
 import { useSolarSystemStore } from '../../store/solarSystemStore';
+import AsteroidLearnMore from './AsteroidLearnMore';
 
 function formatDate(dateStr: string): string {
     const d = new Date(dateStr + 'T00:00:00');
@@ -113,6 +114,13 @@ function ApproachSlide({ approach }: { approach: CloseApproach }) {
                     <SizeBar sizeM={approach.estimatedSizeM} />
                 </div>
             </div>
+            {/* Learn More — educational info from NASA */}
+            <AsteroidLearnMore
+                asteroidId={approach.asteroidId}
+                asteroidName={approach.asteroidName}
+                accent="#4A90D9"
+                compact
+            />
         </div>
     );
 }
