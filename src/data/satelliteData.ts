@@ -187,11 +187,8 @@ export const ALWAYS_SHOW_ORBIT_NAMES = new Set([
 
 export type VitalSignId =
     | 'satellites_now'
-    | 'visible_earth'
     | 'air_temperature'
     | 'precipitation'
-    | 'sea_level'
-    | 'sea_surface_temp'
     | 'soil_moisture'
     | 'ozone'
     | 'water_storage';
@@ -220,16 +217,6 @@ export const VITAL_SIGNS: VitalSign[] = [
         hasEarthOverlay: false,
     },
     {
-        id: 'visible_earth',
-        label: 'Visible Earth',
-        shortLabel: 'Visible',
-        icon: 'EYE',
-        color: '#2ECC71',
-        unit: '',
-        description: 'True-color imagery of Earth from space',
-        hasEarthOverlay: false,
-    },
-    {
         id: 'air_temperature',
         label: 'Air Temperature',
         shortLabel: 'Air Temp',
@@ -247,26 +234,6 @@ export const VITAL_SIGNS: VitalSign[] = [
         color: '#5DADE2',
         unit: 'mm/hr',
         description: 'Global precipitation rate from GPM constellation',
-        hasEarthOverlay: true,
-    },
-    {
-        id: 'sea_level',
-        label: 'Sea Level',
-        shortLabel: 'Sea Lvl',
-        icon: 'WAVE',
-        color: '#1ABC9C',
-        unit: 'mm',
-        description: 'Sea surface height anomaly from radar altimetry',
-        hasEarthOverlay: true,
-    },
-    {
-        id: 'sea_surface_temp',
-        label: 'Sea Surface Temp',
-        shortLabel: 'SST',
-        icon: 'SST',
-        color: '#E74C3C',
-        unit: 'C',
-        description: 'Ocean surface temperature from MODIS & VIIRS',
         hasEarthOverlay: true,
     },
     {
@@ -307,7 +274,6 @@ export const VITAL_SIGNS: VitalSign[] = [
  */
 export const VITAL_SIGN_SATELLITES: Record<VitalSignId, string[]> = {
     satellites_now: [],  // show all — empty means no filter
-    visible_earth: [],
     air_temperature: [
         'AQUA', 'TERRA', 'NOAA 20', 'NOAA 21', 'NOAA 19', 'NOAA 18',
         'GOES 16', 'GOES 18', 'METOP-A', 'METOP-B', 'METOP-C',
@@ -322,14 +288,6 @@ export const VITAL_SIGN_SATELLITES: Record<VitalSignId, string[]> = {
         'GPM-CORE', 'NOAA 20', 'NOAA 19', 'NOAA 18',
         'METOP-B', 'METOP-C', 'GOES 16', 'GOES 18',
         'HIMAWARI-8', 'HIMAWARI-9',
-    ],
-    sea_level: [
-        'SENTINEL-6A', 'JASON-3', 'SENTINEL-3A', 'SENTINEL-3B',
-        'CRYOSAT 2', 'SARAL',
-    ],
-    sea_surface_temp: [
-        'AQUA', 'TERRA', 'SUOMI NPP', 'NOAA 20',
-        'SENTINEL-3A', 'SENTINEL-3B', 'GOES 16', 'GOES 18',
     ],
     soil_moisture: [
         'SMAP', 'SMOS', 'SENTINEL-1A', 'SENTINEL-1B',

@@ -15,11 +15,10 @@ import {
     PLANET_VERTEX,
     EARTH_TEXTURED_FRAGMENT,
     TEMPERATURE_EARTH_FRAGMENT,
-    SST_EARTH_FRAGMENT,
     PRECIPITATION_EARTH_FRAGMENT,
     OZONE_EARTH_FRAGMENT,
     SOIL_MOISTURE_EARTH_FRAGMENT,
-    GENERIC_DATA_EARTH_FRAGMENT,
+    WATER_STORAGE_EARTH_FRAGMENT,
 } from '../scene/shaders/planetShaders';
 import EarthAtmosphere from '../scene/EarthAtmosphere';
 import { useSatelliteStore } from '../../store/satelliteStore';
@@ -62,13 +61,11 @@ export default function EarthScene() {
     const getVitalSignShader = (id: VitalSignId): string => {
         switch (id) {
             case 'air_temperature': return TEMPERATURE_EARTH_FRAGMENT;
-            case 'sea_surface_temp': return SST_EARTH_FRAGMENT;
             case 'precipitation': return PRECIPITATION_EARTH_FRAGMENT;
             case 'ozone': return OZONE_EARTH_FRAGMENT;
-            case 'sea_level': return GENERIC_DATA_EARTH_FRAGMENT;
             case 'soil_moisture': return SOIL_MOISTURE_EARTH_FRAGMENT;
-            case 'water_storage': return GENERIC_DATA_EARTH_FRAGMENT;
-            default: return EARTH_FRAGMENT;
+            case 'water_storage': return WATER_STORAGE_EARTH_FRAGMENT;
+            default: return EARTH_TEXTURED_FRAGMENT;
         }
     };
 
@@ -121,7 +118,7 @@ export default function EarthScene() {
     useEffect(() => {
         if (!meshRef.current) return;
 
-        const hasOverlay = activeVitalSign !== 'satellites_now' && activeVitalSign !== 'visible_earth';
+        const hasOverlay = activeVitalSign !== 'satellites_now';
 
         if (hasOverlay) {
             vitalMaterial.fragmentShader = getVitalSignShader(activeVitalSign);
@@ -136,10 +133,16 @@ export default function EarthScene() {
     // Axial tilt (23.44 deg)
     const axialTilt = useMemo(() => (23.44 * Math.PI) / 180, []);
 
+    // Whether an overlay mode is active (Earth fixed + 360° rotation only)
+    const isOverlayMode = activeVitalSign !== 'satellites_now';
+
     // Rotate Earth + camera fly-to
     useFrame((_state, delta) => {
         if (meshRef.current) {
-            meshRef.current.rotation.y += 0.001;
+            // In overlay mode, stop auto-rotation so user controls rotation
+            if (!isOverlayMode) {
+                meshRef.current.rotation.y += 0.001;
+            }
             const elapsed = clock.getElapsedTime();
             earthMaterial.uniforms.time.value = elapsed;
             vitalMaterial.uniforms.time.value = elapsed;
@@ -147,8 +150,13 @@ export default function EarthScene() {
 
         if (!controlsRef.current) return;
 
-        // Camera fly-to focused satellite
-        if (focusSatelliteId) {
+        // In overlay mode, lock camera target to origin (Earth center)
+        if (isOverlayMode) {
+            controlsRef.current.target.set(0, 0, 0);
+        }
+
+        // Camera fly-to focused satellite (skip in overlay mode — Earth stays centered)
+        if (focusSatelliteId && !isOverlayMode) {
             const sat = satellites.find((s) => s.id === focusSatelliteId);
             if (sat?.position) {
                 const destTarget = new THREE.Vector3(sat.position[0], sat.position[1], sat.position[2]);
@@ -213,11 +221,11 @@ export default function EarthScene() {
             <OrbitControls
                 ref={controlsRef as React.Ref<never>}
                 makeDefault
-                enablePan={true}
+                enablePan={!isOverlayMode}
                 enableDamping={true}
                 dampingFactor={0.08}
-                minDistance={EARTH_RADIUS_3D * 1.3}
-                maxDistance={EARTH_RADIUS_3D * 25}
+                minDistance={isOverlayMode ? EARTH_RADIUS_3D * 1.6 : EARTH_RADIUS_3D * 1.3}
+                maxDistance={isOverlayMode ? EARTH_RADIUS_3D * 5 : EARTH_RADIUS_3D * 25}
                 rotateSpeed={0.5}
             />
         </>

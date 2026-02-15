@@ -708,6 +708,7 @@ export const PRECIPITATION_EARTH_FRAGMENT = `
 export const OZONE_EARTH_FRAGMENT = `
   uniform vec3 lightDirection;
   uniform float time;
+  uniform sampler2D earthMap;
 
   varying vec3 vNormal;
   varying vec3 vPosition;
@@ -716,46 +717,127 @@ export const OZONE_EARTH_FRAGMENT = `
 
   ${NOISE_GLSL}
 
+  // Detect land vs ocean from Earth texture RGB
+  float getLandSignal(vec2 uv) {
+    vec4 c = texture2D(earthMap, uv);
+    return (c.r * 0.5 + c.g * 0.5) - c.b * 0.55;
+  }
+
+  // NASA "Eyes on Earth" ozone color ramp (Dobson units: 0–700)
+  // Purple/magenta (very low) → deep blue → cyan → green → yellow → orange → red (very high)
   vec3 ozoneColor(float o) {
-    if (o < 0.15) return vec3(0.15, 0.02, 0.20);   // ozone hole – dark purple
-    if (o < 0.3) return mix(vec3(0.15, 0.02, 0.20), vec3(0.30, 0.10, 0.60), (o - 0.15) / 0.15);
-    if (o < 0.5) return mix(vec3(0.30, 0.10, 0.60), vec3(0.15, 0.40, 0.70), (o - 0.3) / 0.2);
-    if (o < 0.7) return mix(vec3(0.15, 0.40, 0.70), vec3(0.20, 0.65, 0.45), (o - 0.5) / 0.2);
-    if (o < 0.85) return mix(vec3(0.20, 0.65, 0.45), vec3(0.60, 0.80, 0.20), (o - 0.7) / 0.15);
-    return mix(vec3(0.60, 0.80, 0.20), vec3(0.90, 0.90, 0.25), (o - 0.85) / 0.15);
+    if (o < 0.07) return mix(vec3(0.35, 0.0, 0.45), vec3(0.25, 0.0, 0.55), o / 0.07);           // dark magenta/purple
+    if (o < 0.14) return mix(vec3(0.25, 0.0, 0.55), vec3(0.10, 0.05, 0.70), (o - 0.07) / 0.07);  // deep purple → blue
+    if (o < 0.22) return mix(vec3(0.10, 0.05, 0.70), vec3(0.0, 0.20, 0.80), (o - 0.14) / 0.08);  // blue
+    if (o < 0.30) return mix(vec3(0.0, 0.20, 0.80), vec3(0.0, 0.45, 0.75), (o - 0.22) / 0.08);   // blue → cyan-blue
+    if (o < 0.38) return mix(vec3(0.0, 0.45, 0.75), vec3(0.0, 0.60, 0.60), (o - 0.30) / 0.08);   // cyan
+    if (o < 0.46) return mix(vec3(0.0, 0.60, 0.60), vec3(0.0, 0.70, 0.35), (o - 0.38) / 0.08);   // cyan → green
+    if (o < 0.54) return mix(vec3(0.0, 0.70, 0.35), vec3(0.15, 0.75, 0.10), (o - 0.46) / 0.08);  // green
+    if (o < 0.62) return mix(vec3(0.15, 0.75, 0.10), vec3(0.50, 0.80, 0.0), (o - 0.54) / 0.08);  // green → yellow-green
+    if (o < 0.70) return mix(vec3(0.50, 0.80, 0.0), vec3(0.85, 0.85, 0.0), (o - 0.62) / 0.08);   // yellow
+    if (o < 0.78) return mix(vec3(0.85, 0.85, 0.0), vec3(1.0, 0.65, 0.0), (o - 0.70) / 0.08);    // yellow → orange
+    if (o < 0.86) return mix(vec3(1.0, 0.65, 0.0), vec3(0.95, 0.35, 0.0), (o - 0.78) / 0.08);    // orange → red-orange
+    if (o < 0.93) return mix(vec3(0.95, 0.35, 0.0), vec3(0.85, 0.10, 0.0), (o - 0.86) / 0.07);   // red
+    return mix(vec3(0.85, 0.10, 0.0), vec3(0.60, 0.0, 0.0), (o - 0.93) / 0.07);                  // dark red
   }
 
   void main() {
     vec3 lightDir = normalize(lightDirection);
     float NdotL = dot(vNormal, lightDir);
-    float ambient = 0.15;
+    float ambient = 0.25;
     float diffuse = max(NdotL, 0.0);
 
-    vec3 noisePos = vPosition * 2.5;
-    float continent = fbm(noisePos, 6);
+    // === REAL GEOGRAPHY from Earth blue-marble texture ===
+    vec4 earthTex = texture2D(earthMap, vUv);
+    float centerLand = getLandSignal(vUv);
+    float landMask = smoothstep(-0.02, 0.08, centerLand);
+
     float latitude = abs(vPosition.y) / length(vPosition);
+    float signedLat = vPosition.y / length(vPosition);
 
-    // Ozone: thickest at mid-latitudes, ozone hole at south pole
-    float baseOzone = 0.6 + 0.2 * sin(latitude * 3.14);
-    float southPoleHole = (vPosition.y < 0.0) ? exp(-pow((latitude - 0.9) * 5.0, 2.0)) * -0.5 : 0.0;
-    float variation = fbm(noisePos * 1.5 + 150.0, 3) * 0.15;
+    // === COASTLINE BORDER DETECTION ===
+    // Fine scale
+    vec2 ts1 = vec2(0.0012, 0.0024);
+    float lR1 = getLandSignal(vUv + vec2(ts1.x, 0.0));
+    float lL1 = getLandSignal(vUv - vec2(ts1.x, 0.0));
+    float lU1 = getLandSignal(vUv + vec2(0.0, ts1.y));
+    float lD1 = getLandSignal(vUv - vec2(0.0, ts1.y));
+    float edge1 = length(vec2(lR1 - lL1, lU1 - lD1));
 
-    float ozone = clamp(baseOzone + southPoleHole + variation, 0.0, 1.0);
+    // Broader scale for thicker outline
+    vec2 ts2 = vec2(0.003, 0.006);
+    float lR2 = getLandSignal(vUv + vec2(ts2.x, 0.0));
+    float lL2 = getLandSignal(vUv - vec2(ts2.x, 0.0));
+    float lU2 = getLandSignal(vUv + vec2(0.0, ts2.y));
+    float lD2 = getLandSignal(vUv - vec2(0.0, ts2.y));
+    float edge2 = length(vec2(lR2 - lL2, lU2 - lD2));
 
-    vec3 surfaceColor = ozoneColor(ozone);
+    float borderLine = max(
+      smoothstep(0.03, 0.12, edge1),
+      smoothstep(0.02, 0.08, edge2) * 0.75
+    );
 
-    float edgeMask = smoothstep(0.0, 0.06, abs(continent - 0.015));
-    surfaceColor *= mix(0.7, 1.0, edgeMask);
+    // === OZONE DATA MODEL (Dobson Units) ===
+    vec3 noisePos = vPosition * 2.5;
 
-    float lighting = ambient + diffuse * 0.7;
+    // Base ozone: higher at mid/high latitudes, lower near equator & tropics
+    // Matches NASA distribution pattern
+    float baseOzone = 0.35 + 0.35 * smoothstep(0.0, 0.75, latitude);
+
+    // Extra buildup at northern high latitudes (Arctic vortex region)
+    float arcticBulge = exp(-pow((latitude - 0.85) * 4.0, 2.0)) * 0.20;
+    float northBoost = (signedLat > 0.0) ? arcticBulge : 0.0;
+
+    // Mid-latitude peaks (both hemispheres)
+    float midLatPeak = exp(-pow((latitude - 0.55) * 4.5, 2.0)) * 0.15;
+
+    // South pole ozone hole — significant depletion
+    float southPoleHole = 0.0;
+    if (signedLat < 0.0) {
+      southPoleHole = exp(-pow((latitude - 0.90) * 3.5, 2.0)) * -0.40;
+    }
+
+    // Tropical minimum (equatorial region has less ozone)
+    float tropMin = exp(-pow(latitude * 6.0, 2.0)) * -0.12;
+
+    // Regional variation using noise for realistic patterns
+    float regionNoise = fbm(noisePos * 1.2 + 80.0, 5) * 0.10;
+    float fineNoise = snoise(noisePos * 3.5 + 40.0) * 0.05;
+
+    // Longitudinal variation (Brewer-Dobson circulation patterns)
+    float lonAngle = atan(vPosition.z, vPosition.x);
+    float lonVar = sin(lonAngle * 2.0 + 1.5) * 0.06 * latitude;
+
+    float ozone = clamp(
+      baseOzone + northBoost + midLatPeak + southPoleHole + tropMin
+      + regionNoise + fineNoise + lonVar,
+      0.0, 1.0
+    );
+
+    // === COLOR MAPPING ===
+    vec3 ozColor = ozoneColor(ozone);
+    // Slight brightness boost for vibrancy
+    ozColor = pow(ozColor, vec3(0.90)) * 1.15;
+
+    vec3 surfaceColor = ozColor;
+
+    // === APPLY COASTLINE BORDERS (dark lines like NASA reference) ===
+    surfaceColor = mix(surfaceColor, vec3(0.01, 0.01, 0.01), borderLine * 0.92);
+
+    // === LIGHTING ===
+    float lighting = ambient + diffuse * 0.55;
     vec3 litColor = surfaceColor * lighting;
 
+    // Atmospheric rim glow — subtle purple/blue tint
     vec3 viewDir = normalize(cameraPosition - vWorldPosition);
     float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
-    litColor += vec3(0.40, 0.20, 0.70) * pow(rim, 3.5) * 0.2;
+    float rimGlow = pow(rim, 3.5);
+    litColor += vec3(0.30, 0.15, 0.60) * rimGlow * 0.18;
 
-    float terminator = smoothstep(-0.1, 0.15, NdotL);
-    vec3 finalColor = mix(surfaceColor * 0.3, litColor, terminator);
+    // Day/night terminator
+    float terminator = smoothstep(-0.12, 0.18, NdotL);
+    vec3 nightSide = surfaceColor * 0.35;
+    vec3 finalColor = mix(nightSide, litColor, terminator);
 
     gl_FragColor = vec4(finalColor, 1.0);
   }
@@ -924,6 +1006,144 @@ export const GENERIC_DATA_EARTH_FRAGMENT = `
 
     float terminator = smoothstep(-0.1, 0.15, NdotL);
     vec3 finalColor = mix(surfaceColor * 0.3, litColor, terminator);
+
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;
+
+/**
+ * WATER STORAGE – NASA GRACE/GRACE-FO style.
+ * Diverging red-white-blue color ramp: red = water deficit, white = normal, blue = surplus.
+ * Based on "cm of equivalent water" anomaly data.
+ * Black continent outlines from real Earth texture.
+ */
+export const WATER_STORAGE_EARTH_FRAGMENT = `
+  uniform vec3 lightDirection;
+  uniform float time;
+  uniform sampler2D earthMap;
+
+  varying vec3 vNormal;
+  varying vec3 vPosition;
+  varying vec2 vUv;
+  varying vec3 vWorldPosition;
+
+  ${NOISE_GLSL}
+
+  // Detect land vs ocean from Earth texture RGB
+  float getLandSignal(vec2 uv) {
+    vec4 c = texture2D(earthMap, uv);
+    return (c.r * 0.5 + c.g * 0.5) - c.b * 0.55;
+  }
+
+  // Diverging color ramp: red (deficit) → white (normal) → blue (surplus)
+  // v ranges from 0.0 (extreme deficit) to 1.0 (extreme surplus), 0.5 = neutral
+  vec3 waterStorageColor(float v) {
+    if (v < 0.10) return mix(vec3(0.55, 0.0, 0.0), vec3(0.80, 0.05, 0.0), v / 0.10);
+    if (v < 0.20) return mix(vec3(0.80, 0.05, 0.0), vec3(0.92, 0.20, 0.10), (v - 0.10) / 0.10);
+    if (v < 0.30) return mix(vec3(0.92, 0.20, 0.10), vec3(0.97, 0.45, 0.30), (v - 0.20) / 0.10);
+    if (v < 0.40) return mix(vec3(0.97, 0.45, 0.30), vec3(0.99, 0.75, 0.65), (v - 0.30) / 0.10);
+    if (v < 0.50) return mix(vec3(0.99, 0.75, 0.65), vec3(0.98, 0.95, 0.93), (v - 0.40) / 0.10);
+    if (v < 0.60) return mix(vec3(0.93, 0.95, 0.98), vec3(0.65, 0.78, 0.95), (v - 0.50) / 0.10);
+    if (v < 0.70) return mix(vec3(0.65, 0.78, 0.95), vec3(0.30, 0.50, 0.88), (v - 0.60) / 0.10);
+    if (v < 0.80) return mix(vec3(0.30, 0.50, 0.88), vec3(0.10, 0.25, 0.75), (v - 0.70) / 0.10);
+    if (v < 0.90) return mix(vec3(0.10, 0.25, 0.75), vec3(0.02, 0.08, 0.55), (v - 0.80) / 0.10);
+    return mix(vec3(0.02, 0.08, 0.55), vec3(0.0, 0.0, 0.35), (v - 0.90) / 0.10);
+  }
+
+  void main() {
+    vec3 lightDir = normalize(lightDirection);
+    float NdotL = dot(vNormal, lightDir);
+    float ambient = 0.25;
+    float diffuse = max(NdotL, 0.0);
+
+    // === REAL GEOGRAPHY from Earth blue-marble texture ===
+    vec4 earthTex = texture2D(earthMap, vUv);
+    float centerLand = getLandSignal(vUv);
+    float landMask = smoothstep(-0.02, 0.08, centerLand);
+
+    float latitude = abs(vPosition.y) / length(vPosition);
+    float signedLat = vPosition.y / length(vPosition);
+
+    // === COASTLINE BORDER DETECTION ===
+    vec2 ts1 = vec2(0.0012, 0.0024);
+    float lR1 = getLandSignal(vUv + vec2(ts1.x, 0.0));
+    float lL1 = getLandSignal(vUv - vec2(ts1.x, 0.0));
+    float lU1 = getLandSignal(vUv + vec2(0.0, ts1.y));
+    float lD1 = getLandSignal(vUv - vec2(0.0, ts1.y));
+    float edge1 = length(vec2(lR1 - lL1, lU1 - lD1));
+
+    vec2 ts2 = vec2(0.003, 0.006);
+    float lR2 = getLandSignal(vUv + vec2(ts2.x, 0.0));
+    float lL2 = getLandSignal(vUv - vec2(ts2.x, 0.0));
+    float lU2 = getLandSignal(vUv + vec2(0.0, ts2.y));
+    float lD2 = getLandSignal(vUv - vec2(0.0, ts2.y));
+    float edge2 = length(vec2(lR2 - lL2, lU2 - lD2));
+
+    float borderLine = max(
+      smoothstep(0.03, 0.12, edge1),
+      smoothstep(0.02, 0.08, edge2) * 0.75
+    );
+
+    // === WATER STORAGE ANOMALY DATA ===
+    // Value 0.5 = normal, <0.5 = deficit (red), >0.5 = surplus (blue)
+    vec3 noisePos = vPosition * 2.0;
+
+    // Large regional anomaly patterns (GRACE gravity field resolution)
+    float regional = fbm(noisePos * 0.6 + 200.0, 4) * 0.45;
+
+    // Latitude-based tendencies
+    // Northern high latitudes: tend toward surplus (permafrost melt, precipitation)
+    float northSurplus = (signedLat > 0.0) ? exp(-pow((latitude - 0.70) * 3.5, 2.0)) * 0.15 : 0.0;
+    // Equatorial Africa: strong deficit pattern (matching the image)
+    float lonAngle = atan(vPosition.z, vPosition.x);
+    float saharaDeficit = exp(-pow((latitude - 0.30) * 4.0, 2.0)) *
+                         exp(-pow((lonAngle - 0.3) * 1.8, 2.0)) * -0.30;
+    // Southern Africa: hot deficit
+    float sAfricaDeficit = exp(-pow((signedLat + 0.35) * 5.0, 2.0)) *
+                          exp(-pow((lonAngle - 0.5) * 2.5, 2.0)) * -0.25;
+    // Amazon basin: surplus tendency
+    float amazonSurplus = exp(-pow((signedLat + 0.05) * 6.0, 2.0)) *
+                         exp(-pow((lonAngle + 1.0) * 2.0, 2.0)) * 0.18;
+    // Greenland/Arctic: strong surplus
+    float arcticSurplus = exp(-pow((latitude - 0.90) * 4.0, 2.0)) * 0.25;
+    // Antarctic: strong deficit (ice loss)
+    float antarcticDeficit = (signedLat < 0.0) ? exp(-pow((latitude - 0.88) * 4.0, 2.0)) * -0.20 : 0.0;
+
+    // Medium-scale variation
+    float medNoise = snoise(noisePos * 1.8 + 100.0) * 0.12;
+    // Fine detail
+    float fineNoise = snoise(noisePos * 4.0 + 50.0) * 0.06;
+
+    float anomaly = clamp(
+      0.5 + regional + northSurplus + saharaDeficit + sAfricaDeficit
+      + amazonSurplus + arcticSurplus + antarcticDeficit + medNoise + fineNoise,
+      0.0, 1.0
+    );
+
+    // === COLOR MAPPING ===
+    vec3 wsColor = waterStorageColor(anomaly);
+    // Boost vibrancy slightly
+    wsColor = pow(wsColor, vec3(0.92)) * 1.10;
+
+    vec3 surfaceColor = wsColor;
+
+    // === APPLY COASTLINE BORDERS (dark lines like NASA reference) ===
+    surfaceColor = mix(surfaceColor, vec3(0.01, 0.01, 0.01), borderLine * 0.90);
+
+    // === LIGHTING ===
+    float lighting = ambient + diffuse * 0.55;
+    vec3 litColor = surfaceColor * lighting;
+
+    // Atmospheric rim glow — subtle blue tint
+    vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+    float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
+    float rimGlow = pow(rim, 3.5);
+    litColor += vec3(0.20, 0.25, 0.55) * rimGlow * 0.18;
+
+    // Day/night terminator
+    float terminator = smoothstep(-0.12, 0.18, NdotL);
+    vec3 nightSide = surfaceColor * 0.35;
+    vec3 finalColor = mix(nightSide, litColor, terminator);
 
     gl_FragColor = vec4(finalColor, 1.0);
   }

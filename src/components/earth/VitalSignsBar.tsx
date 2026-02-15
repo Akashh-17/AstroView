@@ -134,7 +134,7 @@ export default function VitalSignsBar() {
             {/* Scrollable tab row */}
             <div
                 ref={scrollRef}
-                className="flex items-stretch gap-1 overflow-x-auto scrollbar-hide px-4 py-1.5"
+                className="flex items-stretch justify-center gap-1 overflow-x-auto scrollbar-hide px-4 py-1.5"
                 style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
             >
                 {VITAL_SIGNS.map((vs) => {
@@ -165,16 +165,16 @@ export default function VitalSignsBar() {
                             <div className="relative z-10">
                                 <VitalIcon
                                     icon={vs.icon}
-                                    color={isActive ? vs.color : 'rgba(255,255,255,0.3)'}
-                                    size={16}
+                                    color={isActive ? vs.color : 'rgba(255,255,255,0.7)'}
+                                    size={18}
                                 />
                             </div>
 
                             {/* Label */}
                             <span
-                                className="relative z-10 text-[9px] font-semibold tracking-[0.06em] leading-none transition-colors"
+                                className="relative z-10 text-[11px] font-semibold tracking-[0.06em] leading-none transition-colors"
                                 style={{
-                                    color: isActive ? vs.color : 'rgba(255,255,255,0.35)',
+                                    color: isActive ? vs.color : 'rgba(255,255,255,0.75)',
                                 }}
                             >
                                 {vs.shortLabel}

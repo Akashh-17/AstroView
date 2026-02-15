@@ -19,6 +19,8 @@ import OrbitalReferencePlanes from '../components/earth/OrbitalReferencePlanes';
 import SatelliteSidebar from '../components/earth/SatelliteSidebar';
 import SatelliteInfoPanel from '../components/earth/SatelliteInfoPanel';
 import VitalSignsBar from '../components/earth/VitalSignsBar';
+import VitalSignLegend from '../components/earth/VitalSignLegend';
+import VitalSignInfo from '../components/earth/VitalSignInfo';
 
 export default function EarthSatellitesPage() {
     const navigate = useNavigate();
@@ -150,6 +152,9 @@ export default function EarthSatellitesPage() {
                         </Suspense>
                     </Canvas>
 
+                    {/* ─── VITAL SIGN LEGEND (color bar) ────────────── */}
+                    <VitalSignLegend />
+
                     {/* ─── VITAL SIGN DATA LAYER BANNER ───────────────── */}
                     {activeVS && activeVS.hasEarthOverlay && (
                         <div className="absolute top-3 right-3 z-20 flex items-center gap-2 px-3 py-1.5 rounded-lg border backdrop-blur-md"
@@ -167,6 +172,9 @@ export default function EarthSatellitesPage() {
                             )}
                         </div>
                     )}
+
+                    {/* ─── VITAL SIGN INFO (expandable) ─────────────── */}
+                    <VitalSignInfo />
 
                     {/* ─── BOTTOM CONTROLS: VITAL SIGNS + TIME ──────────── */}
                     <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col bg-gradient-to-t from-black/90 via-black/60 to-transparent">

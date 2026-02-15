@@ -92,7 +92,7 @@ export default function SatelliteSidebar() {
             list = list.filter((s) => s.name.toLowerCase().includes(q));
         }
         // When a vital‑sign data layer is active, only show relevant sats
-        if (activeVitalSign && activeVitalSign !== 'satellites_now' && activeVitalSign !== 'visible_earth') {
+        if (activeVitalSign && activeVitalSign !== 'satellites_now') {
             const relevantNames = VITAL_SIGN_SATELLITES[activeVitalSign];
             if (relevantNames && relevantNames.length > 0) {
                 list = list.filter((s) =>

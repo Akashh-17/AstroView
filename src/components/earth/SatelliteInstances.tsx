@@ -48,7 +48,7 @@ export default function SatelliteInstances() {
             list = list.filter(s => s.name.toLowerCase().includes(q));
         }
         // Filter by vital sign — only show relevant satellites when a data layer is active
-        if (activeVitalSign && activeVitalSign !== 'satellites_now' && activeVitalSign !== 'visible_earth') {
+        if (activeVitalSign && activeVitalSign !== 'satellites_now') {
             const relevantNames = VITAL_SIGN_SATELLITES[activeVitalSign];
             if (relevantNames && relevantNames.length > 0) {
                 list = list.filter(s =>
