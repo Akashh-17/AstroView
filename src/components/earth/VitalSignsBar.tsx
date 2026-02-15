@@ -94,6 +94,14 @@ function VitalIcon({ icon, color, size = 18 }: { icon: string; color: string; si
                     <path d="M12 3v4M12 17v4M3 12h4M17 12h4" opacity="0.4" />
                 </svg>
             );
+        case 'WATER':
+            return (
+                <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+                    <path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" />
+                    <path d="M8 14c1-1 2-1 3 0s2 1 3 0" opacity="0.6" />
+                    <path d="M8 17c1-1 2-1 3 0s2 1 3 0" opacity="0.4" />
+                </svg>
+            );
         default:
             return (
                 <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">

@@ -5,6 +5,7 @@
  * with HTML labels and altitude readouts.
  */
 
+import { useMemo } from 'react';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import { EARTH_RADIUS_3D, KM_TO_SCENE, ORBITAL_ALTITUDES } from '../../data/satelliteData';
@@ -14,7 +15,6 @@ interface OrbitalRingProps {
     color: string;
     label: string;
     showLabel?: boolean;
-    dashed?: boolean;
 }
 
 function OrbitalRing({
@@ -22,24 +22,38 @@ function OrbitalRing({
     color,
     label,
     showLabel = true,
-    dashed = false,
 }: OrbitalRingProps) {
     const radius = EARTH_RADIUS_3D + altitude * KM_TO_SCENE;
-    const thickness = radius * 0.003; // proportional thickness
+
+    // Build a circle of points for a line loop (no filled ring = no edge-on band)
+    const circlePoints = useMemo(() => {
+        const segments = 256;
+        const pts: THREE.Vector3[] = [];
+        for (let i = 0; i <= segments; i++) {
+            const angle = (i / segments) * Math.PI * 2;
+            pts.push(new THREE.Vector3(Math.cos(angle) * radius, 0, Math.sin(angle) * radius));
+        }
+        return pts;
+    }, [radius]);
+
+    const lineGeometry = useMemo(() => {
+        return new THREE.BufferGeometry().setFromPoints(circlePoints);
+    }, [circlePoints]);
 
     return (
         <group>
-            {/* Ring */}
-            <mesh rotation={[Math.PI / 2, 0, 0]}>
-                <ringGeometry args={[radius - thickness, radius + thickness, 256]} />
-                <meshBasicMaterial
-                    color={color}
-                    side={THREE.DoubleSide}
-                    transparent
-                    opacity={dashed ? 0.06 : 0.10}
-                    depthWrite={false}
-                />
-            </mesh>
+            {/* Ring — rendered as a line, not a filled mesh */}
+            <primitive
+                object={new THREE.Line(
+                    lineGeometry,
+                    new THREE.LineBasicMaterial({
+                        color,
+                        transparent: true,
+                        opacity: 0.25,
+                        depthWrite: false,
+                    }),
+                )}
+            />
 
             {/* Label sitting on the ring */}
             {showLabel && (

@@ -15,10 +15,10 @@ import {
     PLANET_VERTEX,
     EARTH_TEXTURED_FRAGMENT,
     TEMPERATURE_EARTH_FRAGMENT,
-    CO2_EARTH_FRAGMENT,
     SST_EARTH_FRAGMENT,
     PRECIPITATION_EARTH_FRAGMENT,
     OZONE_EARTH_FRAGMENT,
+    SOIL_MOISTURE_EARTH_FRAGMENT,
     GENERIC_DATA_EARTH_FRAGMENT,
 } from '../scene/shaders/planetShaders';
 import EarthAtmosphere from '../scene/EarthAtmosphere';
@@ -62,14 +62,12 @@ export default function EarthScene() {
     const getVitalSignShader = (id: VitalSignId): string => {
         switch (id) {
             case 'air_temperature': return TEMPERATURE_EARTH_FRAGMENT;
-            case 'carbon_dioxide': return CO2_EARTH_FRAGMENT;
-            case 'carbon_monoxide': return GENERIC_DATA_EARTH_FRAGMENT;
             case 'sea_surface_temp': return SST_EARTH_FRAGMENT;
             case 'precipitation': return PRECIPITATION_EARTH_FRAGMENT;
             case 'ozone': return OZONE_EARTH_FRAGMENT;
-            case 'chlorophyll': return GENERIC_DATA_EARTH_FRAGMENT;
             case 'sea_level': return GENERIC_DATA_EARTH_FRAGMENT;
-            case 'soil_moisture': return GENERIC_DATA_EARTH_FRAGMENT;
+            case 'soil_moisture': return SOIL_MOISTURE_EARTH_FRAGMENT;
+            case 'water_storage': return GENERIC_DATA_EARTH_FRAGMENT;
             default: return EARTH_FRAGMENT;
         }
     };

@@ -104,7 +104,7 @@ export default function SatelliteSidebar() {
     }, [satellites, activeCategories, searchQuery, activeVitalSign]);
 
     return (
-        <div className="w-[310px] flex-shrink-0 flex flex-col bg-[#0a0e17]/90 backdrop-blur-xl border-r border-white/[0.04] overflow-hidden select-none">
+        <div className="w-[350px] flex-shrink-0 flex flex-col bg-[#0a0e17]/90 backdrop-blur-xl border-r border-white/[0.06] overflow-hidden select-none">
             {/* inject pulse keyframe */}
             <style>{RING_KEYFRAMES}</style>
 
@@ -119,10 +119,10 @@ export default function SatelliteSidebar() {
                         />
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-[#4A9EFF]" />
                     </span>
-                    <h2 className="text-[11px] font-semibold tracking-[0.18em] uppercase text-white/50">
+                    <h2 className="text-[14px] font-semibold tracking-[0.18em] uppercase text-white/70">
                         Tracking
                     </h2>
-                    <span className="text-[10px] text-white/20 font-mono ml-auto">
+                    <span className="text-[13px] text-white/40 font-mono ml-auto">
                         {globalStats.total.toLocaleString()}
                     </span>
                 </div>
@@ -140,7 +140,7 @@ export default function SatelliteSidebar() {
                 {/* search */}
                 <div className="relative group">
                     <svg
-                        className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/20 group-focus-within:text-[#4A9EFF]/60 transition-colors"
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-[#4A9EFF]/70 transition-colors"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -154,17 +154,17 @@ export default function SatelliteSidebar() {
                     </svg>
                     <input
                         type="text"
-                        placeholder="Search satellites..."
+                        placeholder="🔍  Search satellites..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-8 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[11px] text-white/80 placeholder:text-white/15 focus:outline-none focus:border-[#4A9EFF]/40 focus:bg-white/[0.05] transition-all"
+                        className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-[14px] text-white/90 placeholder:text-white/35 focus:outline-none focus:border-[#4A9EFF]/50 focus:bg-white/[0.08] focus:ring-1 focus:ring-[#4A9EFF]/20 transition-all"
                     />
                     {searchQuery && (
                         <button
                             onClick={() => setSearchQuery('')}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 text-[11px] transition-colors"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 text-[13px] transition-colors"
                         >
-                            x
+                            ✕
                         </button>
                     )}
                 </div>
@@ -217,12 +217,12 @@ export default function SatelliteSidebar() {
                                 {/* label + description */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between gap-2">
-                                        <span className="text-[11px] font-medium text-white/85 truncate">
+                                        <span className="text-[14px] font-medium text-white/90 truncate">
                                             {cat.label}
                                         </span>
                                         <span
-                                            className="text-[10px] font-mono tabular-nums flex-shrink-0"
-                                            style={{ color: `${cat.color}AA` }}
+                                            className="text-[13px] font-mono tabular-nums flex-shrink-0"
+                                            style={{ color: `${cat.color}CC` }}
                                         >
                                             {stats?.total || 0}
                                         </span>
@@ -282,7 +282,7 @@ export default function SatelliteSidebar() {
             {/* ======== SATELLITE LIST ======== */}
             <div className="flex-1 overflow-y-auto px-3 pt-2 pb-3">
                 <div className="flex items-center justify-between px-2 mb-1.5">
-                    <span className="text-[9px] font-semibold tracking-[0.18em] uppercase text-white/20">
+                    <span className="text-[12px] font-semibold tracking-[0.18em] uppercase text-white/40">
                         {filteredList.length > 0
                             ? `${filteredList.length} satellites`
                             : 'No matches'}
@@ -290,7 +290,7 @@ export default function SatelliteSidebar() {
                     {searchQuery && (
                         <button
                             onClick={() => setSearchQuery('')}
-                            className="text-[9px] text-[#4A9EFF]/50 hover:text-[#4A9EFF] transition-colors"
+                            className="text-[11px] text-[#4A9EFF]/60 hover:text-[#4A9EFF] transition-colors"
                         >
                             Clear
                         </button>
@@ -315,25 +315,25 @@ export default function SatelliteSidebar() {
                                 }`}
                             >
                                 <span
-                                    className="w-[5px] h-[5px] rounded-full flex-shrink-0 transition-all duration-200 group-hover:scale-150"
+                                    className="w-[6px] h-[6px] rounded-full flex-shrink-0 transition-all duration-200 group-hover:scale-150"
                                     style={{
                                         backgroundColor: cat?.color || '#888',
                                         boxShadow: isSelected
-                                            ? `0 0 6px ${cat?.color || '#888'}80`
+                                            ? `0 0 8px ${cat?.color || '#888'}80`
                                             : 'none',
                                     }}
                                 />
                                 <span
-                                    className={`text-[10.5px] truncate flex-1 ${
+                                    className={`text-[13px] truncate flex-1 ${
                                         isSelected
                                             ? 'text-[#8BC8FF] font-medium'
-                                            : 'text-white/50 group-hover:text-white/70'
+                                            : 'text-white/60 group-hover:text-white/80'
                                     }`}
                                 >
                                     {sat.name}
                                 </span>
                                 {sat.alt !== undefined && (
-                                    <span className="text-[9px] text-white/12 font-mono tabular-nums flex-shrink-0">
+                                    <span className="text-[11px] text-white/25 font-mono tabular-nums flex-shrink-0">
                                         {Math.round(sat.alt)} km
                                     </span>
                                 )}
@@ -359,15 +359,15 @@ function StatChip({
     return (
         <div className="flex items-center gap-1.5">
             <span
-                className="w-1.5 h-1.5 rounded-full"
+                className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: color }}
             />
-            <span className="text-[9px] font-bold tracking-wider" style={{ color }}>
+            <span className="text-[12px] font-bold tracking-wider" style={{ color }}>
                 {label}
             </span>
             <span
-                className="text-[10px] font-mono tabular-nums"
-                style={{ color: `${color}88` }}
+                className="text-[13px] font-mono tabular-nums"
+                style={{ color: `${color}AA` }}
             >
                 {value}
             </span>

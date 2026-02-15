@@ -9,7 +9,9 @@
 import { useMemo, useState, useEffect } from 'react';
 import { twoline2satrec } from 'satellite.js';
 import { useSatelliteStore } from '../../store/satelliteStore';
+import { useLearningStore } from '../../store/learningStore';
 import { SATELLITE_CATEGORIES } from '../../data/satelliteData';
+import SatelliteLearning from './SatelliteLearning';
 
 /* ── satellite images (NASA public domain / Wikimedia Commons) ───────── */
 const SAT_IMAGES: Record<string, string> = {
@@ -145,6 +147,12 @@ export default function SatelliteInfoPanel() {
     const selectSatellite = useSatelliteStore((s) => s.selectSatellite);
     const focusOnSatellite = useSatelliteStore((s) => s.focusOnSatellite);
 
+    const learningPhase = useLearningStore((s) => s.phase);
+    const startLearning = useLearningStore((s) => s.startLearning);
+    const completedSatellites = useLearningStore((s) => s.completedSatellites);
+    const totalPoints = useLearningStore((s) => s.totalPoints);
+    const isLearningActive = learningPhase !== 'idle';
+
     const sat = useMemo(() => {
         if (!selectedId) return null;
         return satellites.find((s) => s.id === selectedId) || null;
@@ -217,47 +225,64 @@ export default function SatelliteInfoPanel() {
 
     if (!sat) {
         return (
-            <div className="w-80 flex-shrink-0 border-l border-white/[0.06] bg-black/40 backdrop-blur-sm flex items-center justify-center">
+            <div className="w-[400px] flex-shrink-0 border-l border-white/[0.08] bg-black/40 backdrop-blur-sm flex items-center justify-center">
                 <div className="text-center px-6">
-                    <div className="text-2xl mb-3 opacity-20">🛰️</div>
-                    <p className="text-[11px] text-white/20 leading-relaxed">
+                    <div className="text-3xl mb-3 opacity-30">🛰️</div>
+                    <p className="text-[14px] text-white/30 leading-relaxed">
                         Click on a satellite to view its details
                     </p>
+                    {totalPoints > 0 && (
+                        <div className="mt-4 px-4 py-2 rounded-lg bg-[#FFD700]/8 border border-[#FFD700]/15 inline-flex items-center gap-2">
+                            <span className="text-sm">⭐</span>
+                            <span className="text-[13px] text-[#FFD700]/80 font-medium">{totalPoints} pts</span>
+                        </div>
+                    )}
                 </div>
             </div>
         );
     }
 
+    // If learning mode is active, show the learning panel as full-screen overlay + keep info panel
+    if (isLearningActive) {
+        return (
+            <>
+                <div className="w-[400px] flex-shrink-0 border-l border-white/[0.08] bg-black/60 backdrop-blur-sm" />
+                {/* Full-screen learning overlay */}
+                <SatelliteLearning />
+            </>
+        );
+    }
+
     return (
-        <div className="w-80 flex-shrink-0 border-l border-white/[0.06] bg-black/40 backdrop-blur-sm overflow-y-auto">
+        <div className="w-[400px] flex-shrink-0 border-l border-white/[0.08] bg-black/40 backdrop-blur-sm overflow-y-auto">
             {/* Header */}
-            <div className="px-5 pt-5 pb-4">
+            <div className="px-6 pt-6 pb-4">
                 <div className="flex items-start justify-between">
                     <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1.5">
                             {category && (
                                 <span
-                                    className="w-2 h-2 rounded-full"
+                                    className="w-2.5 h-2.5 rounded-full"
                                     style={{ backgroundColor: category.color }}
                                 />
                             )}
-                            <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-white/30">
+                            <span className="text-[12px] font-bold tracking-[0.15em] uppercase text-white/50">
                                 {category?.label}
                             </span>
                         </div>
-                        <h2 className="text-sm font-bold text-white leading-tight">
+                        <h2 className="text-xl font-bold text-white leading-tight">
                             {sat.name}
                         </h2>
-                        <p className="text-[10px] text-white/25 mt-0.5 font-mono">
+                        <p className="text-[13px] text-white/35 mt-1 font-mono">
                             NORAD ID: {sat.id}
                         </p>
                     </div>
                     <button
                         onClick={() => { selectSatellite(null); focusOnSatellite(null); }}
-                        className="w-7 h-7 rounded-full flex items-center justify-center bg-white/[0.06] hover:bg-red-500/20 border border-white/[0.08] hover:border-red-500/40 text-white/40 hover:text-red-400 transition-all duration-200 group"
+                        className="w-8 h-8 rounded-full flex items-center justify-center bg-white/[0.06] hover:bg-red-500/20 border border-white/[0.1] hover:border-red-500/40 text-white/40 hover:text-red-400 transition-all duration-200 group"
                         title="Close panel"
                     >
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                             <path d="M2 2l8 8M10 2l-8 8" />
                         </svg>
                     </button>
@@ -268,7 +293,7 @@ export default function SatelliteInfoPanel() {
             {imageUrl && !imgError && (
                 <>
                     <div className="h-px bg-white/[0.06] mx-5" />
-                    <div className="relative mx-4 mt-3 mb-2 rounded-lg overflow-hidden" style={{ height: '140px' }}>
+                    <div className="relative mx-5 mt-3 mb-2 rounded-xl overflow-hidden" style={{ height: '160px' }}>
                         <img
                             src={imageUrl}
                             alt={sat.name}
@@ -285,7 +310,7 @@ export default function SatelliteInfoPanel() {
                         />
                         {/* image caption if it is a known satellite */}
                         {SAT_IMAGES[sat.name] && (
-                            <span className="absolute bottom-2 left-3 text-[8px] text-white/40 tracking-wide">
+                            <span className="absolute bottom-2.5 left-3.5 text-[10px] text-white/50 tracking-wide">
                                 NASA / Public Domain
                             </span>
                         )}
@@ -297,11 +322,11 @@ export default function SatelliteInfoPanel() {
             {meta && (
                 <>
                     <div className="h-px bg-white/[0.06] mx-5" />
-                    <div className="px-5 py-4">
-                        <h3 className="text-[9px] font-bold tracking-[0.2em] uppercase text-white/20 mb-3">
+                    <div className="px-6 py-4">
+                        <h3 className="text-[12px] font-bold tracking-[0.2em] uppercase text-white/40 mb-3">
                             Mission Info
                         </h3>
-                        <p className="text-[10px] text-white/50 leading-relaxed mb-3">
+                        <p className="text-[14px] text-white/60 leading-relaxed mb-4">
                             {meta.description}
                         </p>
                         <div className="grid grid-cols-3 gap-2">
@@ -327,11 +352,11 @@ export default function SatelliteInfoPanel() {
             <div className="h-px bg-white/[0.06] mx-5" />
 
             {/* Real-time data */}
-            <div className="px-5 py-4">
-                <h3 className="text-[9px] font-bold tracking-[0.2em] uppercase text-white/20 mb-3">
+            <div className="px-6 py-4">
+                <h3 className="text-[12px] font-bold tracking-[0.2em] uppercase text-white/40 mb-3">
                     Real-Time Data
                 </h3>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                <div className="grid grid-cols-2 gap-x-5 gap-y-3">
                     <DataItem label="Altitude" value={sat.alt !== undefined ? `${Math.round(sat.alt)} km` : '—'} />
                     <DataItem label="Velocity" value={sat.velocity !== undefined ? `${sat.velocity.toFixed(2)} km/s` : '—'} />
                     <DataItem label="Latitude" value={sat.lat !== undefined ? `${sat.lat.toFixed(2)}°` : '—'} />
@@ -344,15 +369,15 @@ export default function SatelliteInfoPanel() {
 
             {/* Orbital info */}
             {orbitalParams && (
-                <div className="px-5 py-4">
-                    <h3 className="text-[9px] font-bold tracking-[0.2em] uppercase text-white/20 mb-3">
+                <div className="px-6 py-4">
+                    <h3 className="text-[12px] font-bold tracking-[0.2em] uppercase text-white/40 mb-3">
                         Orbital Parameters
                     </h3>
 
                     {/* Orbit type badge */}
                     <div className="mb-3">
                         <span
-                            className="inline-block px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide"
+                            className="inline-block px-3 py-1.5 rounded-full text-[13px] font-bold tracking-wide"
                             style={{
                                 backgroundColor: category
                                     ? category.color + '18'
@@ -383,13 +408,39 @@ export default function SatelliteInfoPanel() {
             <div className="h-px bg-white/[0.06] mx-5" />
 
             {/* TLE data */}
-            <div className="px-5 py-4">
-                <h3 className="text-[9px] font-bold tracking-[0.2em] uppercase text-white/20 mb-3">
+            <div className="px-6 py-4">
+                <h3 className="text-[12px] font-bold tracking-[0.2em] uppercase text-white/40 mb-3">
                     TLE Data
                 </h3>
-                <pre className="text-[9px] text-white/30 font-mono leading-relaxed overflow-x-auto">
+                <pre className="text-[11px] text-white/40 font-mono leading-relaxed overflow-x-auto">
                     {sat.tle.line1}{'\n'}{sat.tle.line2}
                 </pre>
+            </div>
+
+            {/* Divider */}
+            <div className="h-px bg-white/[0.06] mx-5" />
+
+            {/* Learn More — Story Mode */}
+            <div className="px-6 py-5">
+                <button
+                    onClick={() => startLearning(sat.id)}
+                    className="w-full py-3.5 rounded-xl text-[14px] font-bold tracking-wide bg-gradient-to-r from-[#FFD700]/20 to-[#FF6B35]/20 hover:from-[#FFD700]/30 hover:to-[#FF6B35]/30 border border-[#FFD700]/30 hover:border-[#FFD700]/50 text-[#FFD700] transition-all duration-200 flex items-center justify-center gap-2.5 shadow-lg shadow-[#FFD700]/5 hover:shadow-[#FFD700]/10"
+                >
+                    <span className="text-lg">🚀</span>
+                    <span>{completedSatellites.has(sat.id) ? 'Revisit Story' : 'Learn More'}</span>
+                    <span className="text-[11px] text-[#FFD700]/50 font-normal">AI-powered</span>
+                </button>
+                {completedSatellites.has(sat.id) && (
+                    <div className="flex items-center justify-center gap-1.5 mt-2.5">
+                        <span className="text-[12px] text-[#4AFF7C]/70">✓ Completed</span>
+                    </div>
+                )}
+                {totalPoints > 0 && (
+                    <div className="flex items-center justify-center gap-2 mt-2">
+                        <span className="text-sm">⭐</span>
+                        <span className="text-[13px] text-[#FFD700]/70 font-medium">{totalPoints} total points</span>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -400,8 +451,8 @@ export default function SatelliteInfoPanel() {
 function DataItem({ label, value }: { label: string; value: string }) {
     return (
         <div>
-            <div className="text-[9px] text-white/25">{label}</div>
-            <div className="text-[12px] font-mono text-white mt-0.5">{value}</div>
+            <div className="text-[12px] text-white/40">{label}</div>
+            <div className="text-[16px] font-mono text-white mt-0.5">{value}</div>
         </div>
     );
 }
@@ -409,8 +460,8 @@ function DataItem({ label, value }: { label: string; value: string }) {
 function DataRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
     return (
         <div className="flex items-center justify-between">
-            <span className="text-[10px] text-white/30">{label}</span>
-            <span className={`text-[11px] font-mono ${highlight ? 'text-[#6BB5FF] font-medium' : 'text-white/70'}`}>
+            <span className="text-[13px] text-white/45">{label}</span>
+            <span className={`text-[14px] font-mono ${highlight ? 'text-[#6BB5FF] font-medium' : 'text-white/80'}`}>
                 {value}
             </span>
         </div>
@@ -428,10 +479,10 @@ function MiniTag({
 }) {
     return (
         <div>
-            <div className="text-[8px] text-white/20 mb-0.5">{label}</div>
+            <div className="text-[10px] text-white/30 mb-0.5">{label}</div>
             <div
-                className="text-[10px] font-medium"
-                style={{ color: valueColor || 'rgba(255,255,255,0.65)' }}
+                className="text-[13px] font-medium"
+                style={{ color: valueColor || 'rgba(255,255,255,0.75)' }}
             >
                 {value}
             </div>
