@@ -183,6 +183,193 @@ export const ALWAYS_SHOW_ORBIT_NAMES = new Set([
     'HST',
 ]);
 
+// ─── VITAL SIGNS ────────────────────────────────────────────────────────────
+
+export type VitalSignId =
+    | 'satellites_now'
+    | 'visible_earth'
+    | 'air_temperature'
+    | 'carbon_dioxide'
+    | 'carbon_monoxide'
+    | 'chlorophyll'
+    | 'precipitation'
+    | 'sea_level'
+    | 'sea_surface_temp'
+    | 'soil_moisture'
+    | 'ozone';
+
+export interface VitalSign {
+    id: VitalSignId;
+    label: string;
+    shortLabel: string;
+    icon: string;      // SVG path or emoji
+    color: string;
+    unit: string;
+    description: string;
+    /** Whether this vital sign changes the Earth shader */
+    hasEarthOverlay: boolean;
+}
+
+export const VITAL_SIGNS: VitalSign[] = [
+    {
+        id: 'satellites_now',
+        label: 'Satellites Now',
+        shortLabel: 'Satellites',
+        icon: 'SAT',
+        color: '#4A9EFF',
+        unit: '',
+        description: 'Real-time positions of all tracked satellites',
+        hasEarthOverlay: false,
+    },
+    {
+        id: 'visible_earth',
+        label: 'Visible Earth',
+        shortLabel: 'Visible',
+        icon: 'EYE',
+        color: '#2ECC71',
+        unit: '',
+        description: 'True-color imagery of Earth from space',
+        hasEarthOverlay: false,
+    },
+    {
+        id: 'air_temperature',
+        label: 'Air Temperature',
+        shortLabel: 'Air Temp',
+        icon: 'TEMP',
+        color: '#FF6B35',
+        unit: 'C',
+        description: 'Global air temperature measured by infrared sounders',
+        hasEarthOverlay: true,
+    },
+    {
+        id: 'carbon_dioxide',
+        label: 'Carbon Dioxide',
+        shortLabel: 'CO2',
+        icon: 'CO2',
+        color: '#FFD93D',
+        unit: 'ppm',
+        description: 'Atmospheric CO2 concentration from OCO-2/3 missions',
+        hasEarthOverlay: true,
+    },
+    {
+        id: 'carbon_monoxide',
+        label: 'Carbon Monoxide',
+        shortLabel: 'CO',
+        icon: 'CO',
+        color: '#FF8C42',
+        unit: 'ppb',
+        description: 'Tropospheric CO from biomass burning and industry',
+        hasEarthOverlay: true,
+    },
+    {
+        id: 'chlorophyll',
+        label: 'Chlorophyll',
+        shortLabel: 'Chloro',
+        icon: 'LEAF',
+        color: '#43B581',
+        unit: 'mg/m3',
+        description: 'Ocean chlorophyll-a concentration indicating phytoplankton',
+        hasEarthOverlay: true,
+    },
+    {
+        id: 'precipitation',
+        label: 'Precipitation',
+        shortLabel: 'Rain',
+        icon: 'RAIN',
+        color: '#5DADE2',
+        unit: 'mm/hr',
+        description: 'Global precipitation rate from GPM constellation',
+        hasEarthOverlay: true,
+    },
+    {
+        id: 'sea_level',
+        label: 'Sea Level',
+        shortLabel: 'Sea Lvl',
+        icon: 'WAVE',
+        color: '#1ABC9C',
+        unit: 'mm',
+        description: 'Sea surface height anomaly from radar altimetry',
+        hasEarthOverlay: true,
+    },
+    {
+        id: 'sea_surface_temp',
+        label: 'Sea Surface Temp',
+        shortLabel: 'SST',
+        icon: 'SST',
+        color: '#E74C3C',
+        unit: 'C',
+        description: 'Ocean surface temperature from MODIS & VIIRS',
+        hasEarthOverlay: true,
+    },
+    {
+        id: 'soil_moisture',
+        label: 'Soil Moisture',
+        shortLabel: 'Soil',
+        icon: 'DROP',
+        color: '#8B6914',
+        unit: 'cm3/cm3',
+        description: 'Surface soil moisture from SMAP microwave radiometry',
+        hasEarthOverlay: true,
+    },
+    {
+        id: 'ozone',
+        label: 'Ozone',
+        shortLabel: 'O3',
+        icon: 'O3',
+        color: '#9B59B6',
+        unit: 'DU',
+        description: 'Total column ozone measured by limb and nadir sounders',
+        hasEarthOverlay: true,
+    },
+];
+
+/**
+ * Maps vital signs to the satellite names that measure them.
+ * Satellite names should match what CelesTrak returns (uppercase).
+ */
+export const VITAL_SIGN_SATELLITES: Record<VitalSignId, string[]> = {
+    satellites_now: [],  // show all — empty means no filter
+    visible_earth: [],
+    air_temperature: [
+        'AQUA', 'TERRA', 'NOAA 20', 'NOAA 21', 'NOAA 19', 'NOAA 18',
+        'GOES 16', 'GOES 18', 'METOP-A', 'METOP-B', 'METOP-C',
+        'SUOMI NPP', 'JPSS-1', 'SENTINEL-3A', 'SENTINEL-3B',
+        'FY-3D', 'FY-3E', 'HIMAWARI-8', 'HIMAWARI-9',
+    ],
+    carbon_dioxide: [
+        'OCO-2', 'GOSAT', 'GOSAT-2', 'SENTINEL-5P',
+        'AQUA', 'TERRA', 'NOAA 20',
+    ],
+    carbon_monoxide: [
+        'SENTINEL-5P', 'TERRA', 'AQUA', 'METOP-B', 'METOP-C',
+    ],
+    chlorophyll: [
+        'AQUA', 'TERRA', 'SENTINEL-3A', 'SENTINEL-3B',
+        'SUOMI NPP', 'NOAA 20', 'LANDSAT 9', 'LANDSAT 8',
+    ],
+    precipitation: [
+        'GPM-CORE', 'NOAA 20', 'NOAA 19', 'NOAA 18',
+        'METOP-B', 'METOP-C', 'GOES 16', 'GOES 18',
+        'HIMAWARI-8', 'HIMAWARI-9',
+    ],
+    sea_level: [
+        'SENTINEL-6A', 'JASON-3', 'SENTINEL-3A', 'SENTINEL-3B',
+        'CRYOSAT 2', 'SARAL',
+    ],
+    sea_surface_temp: [
+        'AQUA', 'TERRA', 'SUOMI NPP', 'NOAA 20',
+        'SENTINEL-3A', 'SENTINEL-3B', 'GOES 16', 'GOES 18',
+    ],
+    soil_moisture: [
+        'SMAP', 'SMOS', 'SENTINEL-1A', 'SENTINEL-1B',
+        'AQUA', 'METOP-B', 'METOP-C',
+    ],
+    ozone: [
+        'SENTINEL-5P', 'SUOMI NPP', 'NOAA 20', 'AURA',
+        'METOP-B', 'METOP-C', 'NOAA 19',
+    ],
+};
+
 // ─── SCALE ──────────────────────────────────────────────────────────────────
 
 /** Earth radius in our 3D scene units */

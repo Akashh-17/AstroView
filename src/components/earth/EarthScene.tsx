@@ -10,8 +10,17 @@ import { useRef, useMemo, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Stars, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { EARTH_RADIUS_3D } from '../../data/satelliteData';
-import { PLANET_VERTEX, EARTH_FRAGMENT } from '../scene/shaders/planetShaders';
+import { EARTH_RADIUS_3D, VITAL_SIGNS, type VitalSignId } from '../../data/satelliteData';
+import {
+    PLANET_VERTEX,
+    EARTH_TEXTURED_FRAGMENT,
+    TEMPERATURE_EARTH_FRAGMENT,
+    CO2_EARTH_FRAGMENT,
+    SST_EARTH_FRAGMENT,
+    PRECIPITATION_EARTH_FRAGMENT,
+    OZONE_EARTH_FRAGMENT,
+    GENERIC_DATA_EARTH_FRAGMENT,
+} from '../scene/shaders/planetShaders';
 import EarthAtmosphere from '../scene/EarthAtmosphere';
 import { useSatelliteStore } from '../../store/satelliteStore';
 
@@ -29,6 +38,7 @@ export default function EarthScene() {
     const cameraTransitioning = useSatelliteStore((s) => s.cameraTransitioning);
     const setCameraTransitioning = useSatelliteStore((s) => s.setCameraTransitioning);
     const satellites = useSatelliteStore((s) => s.satellites);
+    const activeVitalSign = useSatelliteStore((s) => s.activeVitalSign);
 
     // Transition state
     const isTransitioning = useRef(false);
@@ -48,17 +58,82 @@ export default function EarthScene() {
         }
     }, [focusSatelliteId, cameraTransitioning, camera]);
 
-    // Earth procedural shader material
+    // Helper: get fragment shader for a vital sign
+    const getVitalSignShader = (id: VitalSignId): string => {
+        switch (id) {
+            case 'air_temperature': return TEMPERATURE_EARTH_FRAGMENT;
+            case 'carbon_dioxide': return CO2_EARTH_FRAGMENT;
+            case 'carbon_monoxide': return GENERIC_DATA_EARTH_FRAGMENT;
+            case 'sea_surface_temp': return SST_EARTH_FRAGMENT;
+            case 'precipitation': return PRECIPITATION_EARTH_FRAGMENT;
+            case 'ozone': return OZONE_EARTH_FRAGMENT;
+            case 'chlorophyll': return GENERIC_DATA_EARTH_FRAGMENT;
+            case 'sea_level': return GENERIC_DATA_EARTH_FRAGMENT;
+            case 'soil_moisture': return GENERIC_DATA_EARTH_FRAGMENT;
+            default: return EARTH_FRAGMENT;
+        }
+    };
+
+    // Helper: get the dataColor uniform for generic shaders
+    const getDataColor = (id: VitalSignId): THREE.Vector3 => {
+        const vs = VITAL_SIGNS.find(v => v.id === id);
+        if (!vs) return new THREE.Vector3(0.3, 0.6, 0.9);
+        const c = new THREE.Color(vs.color);
+        return new THREE.Vector3(c.r, c.g, c.b);
+    };
+
+    // Load a real Earth texture for geography-aware overlays (coastlines, borders)
+    const earthTexture = useMemo(() => {
+        const tex = new THREE.TextureLoader().load(
+            'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'
+        );
+        return tex;
+    }, []);
+
+    // Earth textured shader material — default (Blue Marble)
     const earthMaterial = useMemo(() => {
         return new THREE.ShaderMaterial({
             vertexShader: PLANET_VERTEX,
-            fragmentShader: EARTH_FRAGMENT,
+            fragmentShader: EARTH_TEXTURED_FRAGMENT,
             uniforms: {
                 lightDirection: { value: new THREE.Vector3(1, 0.2, 0.5).normalize() },
                 time: { value: 0 },
+                earthMap: { value: earthTexture },
             },
         });
-    }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [earthTexture]);
+
+    // Vital-sign overlay material — created when needed
+    const vitalMaterial = useMemo(() => {
+        return new THREE.ShaderMaterial({
+            vertexShader: PLANET_VERTEX,
+            fragmentShader: TEMPERATURE_EARTH_FRAGMENT,
+            uniforms: {
+                lightDirection: { value: new THREE.Vector3(1, 0.2, 0.5).normalize() },
+                time: { value: 0 },
+                dataColor: { value: new THREE.Vector3(0.3, 0.6, 0.9) },
+                earthMap: { value: earthTexture },
+            },
+        });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [earthTexture]);
+
+    // Switch material when vital sign changes
+    useEffect(() => {
+        if (!meshRef.current) return;
+
+        const hasOverlay = activeVitalSign !== 'satellites_now' && activeVitalSign !== 'visible_earth';
+
+        if (hasOverlay) {
+            vitalMaterial.fragmentShader = getVitalSignShader(activeVitalSign);
+            vitalMaterial.uniforms.dataColor.value = getDataColor(activeVitalSign);
+            vitalMaterial.needsUpdate = true;
+            meshRef.current.material = vitalMaterial;
+        } else {
+            meshRef.current.material = earthMaterial;
+        }
+    }, [activeVitalSign, earthMaterial, vitalMaterial]);
 
     // Axial tilt (23.44 deg)
     const axialTilt = useMemo(() => (23.44 * Math.PI) / 180, []);
@@ -67,7 +142,9 @@ export default function EarthScene() {
     useFrame((_state, delta) => {
         if (meshRef.current) {
             meshRef.current.rotation.y += 0.001;
-            earthMaterial.uniforms.time.value = clock.getElapsedTime();
+            const elapsed = clock.getElapsedTime();
+            earthMaterial.uniforms.time.value = elapsed;
+            vitalMaterial.uniforms.time.value = elapsed;
         }
 
         if (!controlsRef.current) return;

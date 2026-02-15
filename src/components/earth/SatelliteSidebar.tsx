@@ -10,6 +10,7 @@ import { twoline2satrec } from 'satellite.js';
 import { useSatelliteStore } from '../../store/satelliteStore';
 import {
     SATELLITE_CATEGORIES,
+    VITAL_SIGN_SATELLITES,
     type SatelliteInfo,
 } from '../../data/satelliteData';
 
@@ -79,6 +80,8 @@ export default function SatelliteSidebar() {
         };
     }, [satellites]);
 
+    const activeVitalSign = useSatelliteStore((s) => s.activeVitalSign);
+
     /* ── filtered list for bottom panel ──────────────────────────── */
     const filteredList = useMemo(() => {
         let list = satellites;
@@ -88,8 +91,17 @@ export default function SatelliteSidebar() {
             const q = searchQuery.toLowerCase();
             list = list.filter((s) => s.name.toLowerCase().includes(q));
         }
+        // When a vital‑sign data layer is active, only show relevant sats
+        if (activeVitalSign && activeVitalSign !== 'satellites_now' && activeVitalSign !== 'visible_earth') {
+            const relevantNames = VITAL_SIGN_SATELLITES[activeVitalSign];
+            if (relevantNames && relevantNames.length > 0) {
+                list = list.filter((s) =>
+                    relevantNames.some((name) => s.name.toUpperCase().includes(name))
+                );
+            }
+        }
         return list.slice(0, 200);
-    }, [satellites, activeCategories, searchQuery]);
+    }, [satellites, activeCategories, searchQuery, activeVitalSign]);
 
     return (
         <div className="w-[310px] flex-shrink-0 flex flex-col bg-[#0a0e17]/90 backdrop-blur-xl border-r border-white/[0.04] overflow-hidden select-none">

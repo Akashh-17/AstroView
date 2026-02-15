@@ -11,7 +11,7 @@ import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useSatelliteStore } from '../../store/satelliteStore';
 import { propagateSatellite } from '../../engine/satelliteService';
-import { SATELLITE_CATEGORIES, FEATURED_SATELLITE_NAMES } from '../../data/satelliteData';
+import { SATELLITE_CATEGORIES, FEATURED_SATELLITE_NAMES, VITAL_SIGN_SATELLITES } from '../../data/satelliteData';
 import { Html } from '@react-three/drei';
 
 const MAX_INSTANCES = 2000;
@@ -33,8 +33,9 @@ export default function SatelliteInstances() {
     const focusOnSatellite = useSatelliteStore((s) => s.focusOnSatellite);
     const simulationTime = useSatelliteStore((s) => s.simulationTime);
     const setSatellites = useSatelliteStore((s) => s.setSatellites);
+    const activeVitalSign = useSatelliteStore((s) => s.activeVitalSign);
 
-    // Filter satellites based on active categories and search
+    // Filter satellites based on active categories, search, and vital sign
     const filtered = useMemo(() => {
         let list = satellites;
         if (activeCategories.size > 0) {
@@ -44,8 +45,17 @@ export default function SatelliteInstances() {
             const q = searchQuery.toLowerCase();
             list = list.filter(s => s.name.toLowerCase().includes(q));
         }
+        // Filter by vital sign — only show relevant satellites when a data layer is active
+        if (activeVitalSign && activeVitalSign !== 'satellites_now' && activeVitalSign !== 'visible_earth') {
+            const relevantNames = VITAL_SIGN_SATELLITES[activeVitalSign];
+            if (relevantNames && relevantNames.length > 0) {
+                list = list.filter(s =>
+                    relevantNames.some(name => s.name.toUpperCase().includes(name))
+                );
+            }
+        }
         return list.slice(0, MAX_INSTANCES);
-    }, [satellites, activeCategories, searchQuery]);
+    }, [satellites, activeCategories, searchQuery, activeVitalSign]);
 
     // Temp objects for instance matrix updates
     const tempObj = useMemo(() => new THREE.Object3D(), []);

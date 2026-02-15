@@ -6,7 +6,7 @@
  * mission metadata, and TLE data.
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { twoline2satrec } from 'satellite.js';
 import { useSatelliteStore } from '../../store/satelliteStore';
 import { SATELLITE_CATEGORIES } from '../../data/satelliteData';
@@ -210,6 +210,11 @@ export default function SatelliteInfoPanel() {
 
     const [imgError, setImgError] = useState(false);
 
+    // Reset image error state when a different satellite is selected
+    useEffect(() => {
+        setImgError(false);
+    }, [selectedId]);
+
     if (!sat) {
         return (
             <div className="w-80 flex-shrink-0 border-l border-white/[0.06] bg-black/40 backdrop-blur-sm flex items-center justify-center">
@@ -249,9 +254,12 @@ export default function SatelliteInfoPanel() {
                     </div>
                     <button
                         onClick={() => { selectSatellite(null); focusOnSatellite(null); }}
-                        className="text-white/20 hover:text-white/60 transition-colors text-lg leading-none"
+                        className="w-7 h-7 rounded-full flex items-center justify-center bg-white/[0.06] hover:bg-red-500/20 border border-white/[0.08] hover:border-red-500/40 text-white/40 hover:text-red-400 transition-all duration-200 group"
+                        title="Close panel"
                     >
-                        ×
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <path d="M2 2l8 8M10 2l-8 8" />
+                        </svg>
                     </button>
                 </div>
             </div>

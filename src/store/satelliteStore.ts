@@ -5,7 +5,7 @@
  */
 
 import { create } from 'zustand';
-import type { SatelliteInfo, SatelliteCategoryId } from '../data/satelliteData';
+import type { SatelliteInfo, SatelliteCategoryId, VitalSignId } from '../data/satelliteData';
 
 interface SatelliteState {
     /** All loaded satellites */
@@ -31,6 +31,8 @@ interface SatelliteState {
     isPaused: boolean;
     /** Show orbits for all filtered satellites */
     showOrbits: boolean;
+    /** Active vital sign / data layer */
+    activeVitalSign: VitalSignId;
 
     // ── Actions ──
     setSatellites: (sats: SatelliteInfo[]) => void;
@@ -46,6 +48,7 @@ interface SatelliteState {
     togglePause: () => void;
     toggleShowOrbits: () => void;
     resetToNow: () => void;
+    setActiveVitalSign: (id: VitalSignId) => void;
 }
 
 export const useSatelliteStore = create<SatelliteState>((set) => ({
@@ -61,6 +64,7 @@ export const useSatelliteStore = create<SatelliteState>((set) => ({
     timeSpeed: 1,
     isPaused: false,
     showOrbits: false,
+    activeVitalSign: 'satellites_now' as VitalSignId,
 
     setSatellites: (sats) => set({ satellites: sats }),
     selectSatellite: (id) => set({ selectedSatelliteId: id }),
@@ -81,4 +85,5 @@ export const useSatelliteStore = create<SatelliteState>((set) => ({
     togglePause: () => set((s) => ({ isPaused: !s.isPaused })),
     toggleShowOrbits: () => set((s) => ({ showOrbits: !s.showOrbits })),
     resetToNow: () => set({ simulationTime: new Date(), timeSpeed: 1, isPaused: false }),
+    setActiveVitalSign: (id) => set({ activeVitalSign: id }),
 }));

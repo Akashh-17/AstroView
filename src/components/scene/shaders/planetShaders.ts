@@ -114,7 +114,80 @@ export const PLANET_VERTEX = `
   }
 `;
 
-// ─── EARTH SHADER ───────────────────────────────────────────────────────────
+// ─── TEXTURED EARTH SHADER ──────────────────────────────────────────────────
+// Uses NASA Blue Marble texture for realistic Earth surface with day/night
+// lighting, atmospheric rim glow, specular on oceans, and city lights.
+
+export const EARTH_TEXTURED_FRAGMENT = `
+  uniform vec3 lightDirection;
+  uniform float time;
+  uniform sampler2D earthMap;
+
+  varying vec3 vNormal;
+  varying vec3 vPosition;
+  varying vec2 vUv;
+  varying vec3 vWorldPosition;
+
+  ${NOISE_GLSL}
+
+  void main() {
+    // Sample the Blue Marble texture
+    vec3 texColor = texture2D(earthMap, vUv).rgb;
+
+    // Lighting
+    vec3 lightDir = normalize(lightDirection);
+    float NdotL = dot(vNormal, lightDir);
+    float ambient = 0.06;
+    float diffuse = max(NdotL, 0.0);
+
+    // Detect land vs ocean from texture luminance + blue channel ratio
+    float lum = dot(texColor, vec3(0.299, 0.587, 0.114));
+    float blueRatio = texColor.b / (lum + 0.001);
+    float landMask = 1.0 - smoothstep(1.1, 1.6, blueRatio);
+    // Ice/snow: high luminance, low saturation
+    float maxC = max(texColor.r, max(texColor.g, texColor.b));
+    float minC = min(texColor.r, min(texColor.g, texColor.b));
+    float sat = (maxC - minC) / (maxC + 0.001);
+    float iceMask = smoothstep(0.55, 0.75, lum) * (1.0 - smoothstep(0.15, 0.35, sat));
+
+    // Specular on water
+    vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+    vec3 halfVec = normalize(lightDir + viewDir);
+    float specAngle = max(dot(vNormal, halfVec), 0.0);
+    float specular = pow(specAngle, 80.0) * (1.0 - landMask) * (1.0 - iceMask) * 0.5;
+
+    // === DAY SIDE ===
+    vec3 dayColor = texColor * (ambient + diffuse) + vec3(specular);
+
+    // Atmospheric rim light
+    float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
+    float rimGlow = pow(rim, 3.5);
+    dayColor += vec3(0.30, 0.55, 1.0) * rimGlow * 0.35;
+
+    // === NIGHT SIDE — CITY LIGHTS ===
+    vec3 noisePos = vPosition * 2.5;
+    float cityNoise1 = fbm(noisePos * 12.0 + 100.0, 4);
+    float cityNoise2 = snoise(noisePos * 25.0 + 200.0);
+    float cityMask = smoothstep(0.25, 0.55, cityNoise1) * smoothstep(0.1, 0.5, cityNoise2);
+    cityMask *= landMask * (1.0 - iceMask);
+    float absLat = abs(vPosition.y) / length(vPosition);
+    float latWeight = smoothstep(0.1, 0.25, absLat) * (1.0 - smoothstep(0.65, 0.85, absLat));
+    cityMask *= latWeight;
+    vec3 cityColor = vec3(1.0, 0.75, 0.30) * cityMask * 0.8;
+
+    // === BLEND DAY / NIGHT ===
+    float terminator = smoothstep(-0.08, 0.12, NdotL);
+    vec3 nightColor = vec3(0.0) + cityColor;
+    float nightRim = pow(rim, 4.0) * (1.0 - terminator);
+    nightColor += vec3(0.15, 0.25, 0.50) * nightRim * 0.2;
+
+    vec3 finalColor = mix(nightColor, dayColor, terminator);
+
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;
+
+// ─── PROCEDURAL EARTH SHADER (FALLBACK) ─────────────────────────────────────
 // Continents, oceans, ice caps, clouds, specular, AND night-side city lights
 export const EARTH_FRAGMENT = `
   uniform vec3 lightDirection;
@@ -219,6 +292,473 @@ export const EARTH_FRAGMENT = `
     nightColor += vec3(0.15, 0.25, 0.50) * nightRim * 0.2;
 
     vec3 finalColor = mix(nightColor, dayColor, terminator);
+
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;
+
+// ─── VITAL SIGN EARTH SHADERS ──────────────────────────────────────────────
+// Temperature heatmap, CO2, sea level, etc. – overlay colors on the same
+// procedural continent geometry so the shapes stay consistent.
+
+/**
+ * AIR TEMPERATURE – latitude-based temperature gradient with continental detail.
+ * Hot equator (reds/oranges), temperate mid-lats (yellows/greens), cold poles (blues/purples).
+ * Matches NASA "Eyes on Earth" style thermal visualization.
+ */
+export const TEMPERATURE_EARTH_FRAGMENT = `
+  uniform vec3 lightDirection;
+  uniform float time;
+  uniform sampler2D earthMap;
+
+  varying vec3 vNormal;
+  varying vec3 vPosition;
+  varying vec2 vUv;
+  varying vec3 vWorldPosition;
+
+  ${NOISE_GLSL}
+
+  // Detect land vs ocean from Earth texture RGB
+  float getLandSignal(vec2 uv) {
+    vec4 c = texture2D(earthMap, uv);
+    return (c.r * 0.5 + c.g * 0.5) - c.b * 0.55;
+  }
+
+  // NASA-style infrared thermal color ramp
+  // Deep violet/blue (coldest) -> cyan -> green -> yellow -> orange -> bright red
+  vec3 thermalColor(float t) {
+    vec3 c;
+    if (t < 0.08) {
+      c = mix(vec3(0.10, 0.0, 0.22), vec3(0.15, 0.03, 0.42), t / 0.08);
+    } else if (t < 0.18) {
+      c = mix(vec3(0.15, 0.03, 0.42), vec3(0.08, 0.10, 0.70), (t - 0.08) / 0.10);
+    } else if (t < 0.28) {
+      c = mix(vec3(0.08, 0.10, 0.70), vec3(0.0, 0.55, 0.85), (t - 0.18) / 0.10);
+    } else if (t < 0.38) {
+      c = mix(vec3(0.0, 0.55, 0.85), vec3(0.0, 0.70, 0.50), (t - 0.28) / 0.10);
+    } else if (t < 0.48) {
+      c = mix(vec3(0.0, 0.70, 0.50), vec3(0.20, 0.82, 0.15), (t - 0.38) / 0.10);
+    } else if (t < 0.56) {
+      c = mix(vec3(0.20, 0.82, 0.15), vec3(0.65, 0.90, 0.0), (t - 0.48) / 0.08);
+    } else if (t < 0.64) {
+      c = mix(vec3(0.65, 0.90, 0.0), vec3(1.0, 0.92, 0.0), (t - 0.56) / 0.08);
+    } else if (t < 0.74) {
+      c = mix(vec3(1.0, 0.92, 0.0), vec3(1.0, 0.55, 0.0), (t - 0.64) / 0.10);
+    } else if (t < 0.84) {
+      c = mix(vec3(1.0, 0.55, 0.0), vec3(0.95, 0.12, 0.0), (t - 0.74) / 0.10);
+    } else if (t < 0.92) {
+      c = mix(vec3(0.95, 0.12, 0.0), vec3(0.70, 0.02, 0.08), (t - 0.84) / 0.08);
+    } else {
+      c = mix(vec3(0.70, 0.02, 0.08), vec3(0.95, 0.45, 0.55), (t - 0.92) / 0.08);
+    }
+    return c;
+  }
+
+  void main() {
+    // Soft lighting
+    vec3 lightDir = normalize(lightDirection);
+    float NdotL = dot(vNormal, lightDir);
+    float ambient = 0.25;
+    float diffuse = max(NdotL, 0.0);
+
+    // === REAL GEOGRAPHY from Earth blue-marble texture ===
+    vec4 earthTex = texture2D(earthMap, vUv);
+    float centerLand = getLandSignal(vUv);
+    float landMask = smoothstep(-0.02, 0.08, centerLand);
+
+    // Latitude
+    float latitude = abs(vPosition.y) / length(vPosition);
+    float signedLat = vPosition.y / length(vPosition);
+
+    // Ice/snow from texture brightness + polar latitude
+    float texBright = dot(earthTex.rgb, vec3(0.299, 0.587, 0.114));
+    float iceMask = smoothstep(0.55, 0.78, texBright) * smoothstep(0.45, 0.72, latitude);
+
+    // === COASTLINE BORDER DETECTION ===
+    // Multi-scale edge detection for visible continent outlines
+    // Fine scale
+    vec2 ts1 = vec2(0.0012, 0.0024);
+    float lR1 = getLandSignal(vUv + vec2(ts1.x, 0.0));
+    float lL1 = getLandSignal(vUv - vec2(ts1.x, 0.0));
+    float lU1 = getLandSignal(vUv + vec2(0.0, ts1.y));
+    float lD1 = getLandSignal(vUv - vec2(0.0, ts1.y));
+    float edge1 = length(vec2(lR1 - lL1, lU1 - lD1));
+
+    // Broader scale for thicker outline
+    vec2 ts2 = vec2(0.003, 0.006);
+    float lR2 = getLandSignal(vUv + vec2(ts2.x, 0.0));
+    float lL2 = getLandSignal(vUv - vec2(ts2.x, 0.0));
+    float lU2 = getLandSignal(vUv + vec2(0.0, ts2.y));
+    float lD2 = getLandSignal(vUv - vec2(0.0, ts2.y));
+    float edge2 = length(vec2(lR2 - lL2, lU2 - lD2));
+
+    // Combine edges: fine + broad for anti-aliased visible borders
+    float borderLine = max(
+      smoothstep(0.03, 0.12, edge1),
+      smoothstep(0.02, 0.08, edge2) * 0.75
+    );
+
+    // === TEMPERATURE MODEL ===
+    vec3 noisePos = vPosition * 2.5;
+    // Base: strong latitude gradient (equator hot, poles cold)
+    float baseTemp = pow(1.0 - latitude, 0.85);
+    // Sub-tropical desert belt
+    float desertBelt = exp(-pow((latitude - 0.35) * 4.5, 2.0)) * 0.18;
+    // Tropical ITCZ
+    float tropicalWarm = exp(-pow(latitude * 7.0, 2.0)) * 0.12;
+    // Continental interior heating
+    float continentalHeat = landMask * 0.10 * (1.0 - latitude * 0.5);
+    // Elevation cooling
+    float elevation = fbm(noisePos * 1.5 + 5.0, 5);
+    float elevCool = smoothstep(0.15, 0.45, elevation) * landMask * -0.18;
+    // Ocean thermal inertia
+    float oceanMod = (1.0 - landMask) * -0.05;
+    // Regional variation
+    float regionNoise = fbm(noisePos * 2.2 + 50.0, 5) * 0.12;
+    float microNoise = snoise(noisePos * 8.0 + 30.0) * 0.04;
+    // Warm ocean currents
+    float lonAngle = atan(vPosition.z, vPosition.x);
+    float currentWarm = 0.0;
+    currentWarm += exp(-pow((signedLat - 0.45) * 5.0, 2.0)) * exp(-pow((lonAngle + 0.5) * 2.0, 2.0)) * 0.08;
+    currentWarm += exp(-pow((signedLat - 0.40) * 5.0, 2.0)) * exp(-pow((lonAngle - 2.5) * 2.0, 2.0)) * 0.06;
+    currentWarm *= (1.0 - landMask);
+
+    float temp = clamp(
+      baseTemp + desertBelt + tropicalWarm + continentalHeat
+      + elevCool + oceanMod + regionNoise + microNoise + currentWarm,
+      0.0, 1.0
+    );
+
+    // === COLOR MAPPING ===
+    vec3 heatColor = thermalColor(temp);
+    heatColor = pow(heatColor, vec3(0.88)) * 1.25;
+
+    vec3 landHeat = heatColor * 1.05;
+    vec3 oceanHeat = heatColor * 0.82;
+    vec3 surfaceColor = mix(oceanHeat, landHeat, landMask);
+
+    // Polar ice tint
+    vec3 iceColor = vec3(0.70, 0.80, 0.95);
+    surfaceColor = mix(surfaceColor, iceColor, iceMask * 0.55);
+
+    // === APPLY COASTLINE BORDERS ===
+    // Dark outlines like NASA reference image
+    surfaceColor = mix(surfaceColor, vec3(0.02, 0.02, 0.02), borderLine * 0.88);
+
+    // === LIGHTING ===
+    float lighting = ambient + diffuse * 0.55;
+    vec3 litColor = surfaceColor * lighting;
+
+    // Hot emissive glow
+    float hotGlow = smoothstep(0.65, 0.90, temp) * 0.15;
+    litColor += heatColor * hotGlow;
+
+    // Atmospheric rim
+    vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+    float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
+    float rimGlow = pow(rim, 3.0);
+    vec3 rimColor = mix(vec3(0.15, 0.30, 0.80), vec3(0.85, 0.35, 0.15), temp);
+    litColor += rimColor * rimGlow * 0.22;
+
+    // Day/night
+    float terminator = smoothstep(-0.15, 0.20, NdotL);
+    vec3 nightSide = surfaceColor * 0.5;
+    nightSide += heatColor * hotGlow * 0.5;
+    vec3 finalColor = mix(nightSide, litColor, terminator);
+
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;
+
+/**
+ * CO2 CONCENTRATION – yellows/oranges for high, greens for moderate, blues for low.
+ */
+export const CO2_EARTH_FRAGMENT = `
+  uniform vec3 lightDirection;
+  uniform float time;
+
+  varying vec3 vNormal;
+  varying vec3 vPosition;
+  varying vec2 vUv;
+  varying vec3 vWorldPosition;
+
+  ${NOISE_GLSL}
+
+  vec3 co2Color(float c) {
+    if (c < 0.3) return mix(vec3(0.05, 0.25, 0.55), vec3(0.10, 0.50, 0.40), c / 0.3);
+    if (c < 0.5) return mix(vec3(0.10, 0.50, 0.40), vec3(0.45, 0.70, 0.15), (c - 0.3) / 0.2);
+    if (c < 0.7) return mix(vec3(0.45, 0.70, 0.15), vec3(0.90, 0.80, 0.10), (c - 0.5) / 0.2);
+    if (c < 0.85) return mix(vec3(0.90, 0.80, 0.10), vec3(0.95, 0.50, 0.08), (c - 0.7) / 0.15);
+    return mix(vec3(0.95, 0.50, 0.08), vec3(0.80, 0.15, 0.05), (c - 0.85) / 0.15);
+  }
+
+  void main() {
+    vec3 lightDir = normalize(lightDirection);
+    float NdotL = dot(vNormal, lightDir);
+    float ambient = 0.15;
+    float diffuse = max(NdotL, 0.0);
+
+    vec3 noisePos = vPosition * 2.5;
+    float continent = fbm(noisePos, 6);
+    float landMask = smoothstep(-0.05, 0.08, continent);
+    float latitude = abs(vPosition.y) / length(vPosition);
+
+    // CO2 pattern: highest over industrial regions (mid-northern latitudes on land)
+    float baseCO2 = 0.5 + 0.2 * (1.0 - latitude);
+    float industrial = fbm(noisePos * 2.0 + 300.0, 4) * 0.25;
+    float northernBias = smoothstep(0.15, 0.50, vPosition.y / length(vPosition)) * 0.15;
+    float co2 = clamp(baseCO2 + industrial * landMask + northernBias * landMask, 0.0, 1.0);
+
+    vec3 heatColor = co2Color(co2);
+    vec3 surfaceColor = mix(heatColor * 0.7, heatColor, landMask);
+
+    float edgeMask = smoothstep(0.0, 0.06, abs(continent - 0.015));
+    surfaceColor *= mix(0.6, 1.0, edgeMask);
+
+    float lighting = ambient + diffuse * 0.7;
+    vec3 litColor = surfaceColor * lighting;
+
+    vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+    float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
+    litColor += vec3(0.30, 0.50, 0.20) * pow(rim, 3.5) * 0.2;
+
+    float terminator = smoothstep(-0.1, 0.15, NdotL);
+    vec3 finalColor = mix(surfaceColor * 0.3, litColor, terminator);
+
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;
+
+/**
+ * SEA SURFACE TEMPERATURE – ocean-focused: warm reds in tropics, cold blues at poles.
+ */
+export const SST_EARTH_FRAGMENT = `
+  uniform vec3 lightDirection;
+  uniform float time;
+
+  varying vec3 vNormal;
+  varying vec3 vPosition;
+  varying vec2 vUv;
+  varying vec3 vWorldPosition;
+
+  ${NOISE_GLSL}
+
+  vec3 sstColor(float t) {
+    if (t < 0.2) return mix(vec3(0.08, 0.02, 0.25), vec3(0.05, 0.20, 0.60), t / 0.2);
+    if (t < 0.4) return mix(vec3(0.05, 0.20, 0.60), vec3(0.05, 0.55, 0.65), (t - 0.2) / 0.2);
+    if (t < 0.6) return mix(vec3(0.05, 0.55, 0.65), vec3(0.50, 0.80, 0.15), (t - 0.4) / 0.2);
+    if (t < 0.8) return mix(vec3(0.50, 0.80, 0.15), vec3(0.95, 0.65, 0.05), (t - 0.6) / 0.2);
+    return mix(vec3(0.95, 0.65, 0.05), vec3(0.85, 0.10, 0.05), (t - 0.8) / 0.2);
+  }
+
+  void main() {
+    vec3 lightDir = normalize(lightDirection);
+    float NdotL = dot(vNormal, lightDir);
+    float ambient = 0.15;
+    float diffuse = max(NdotL, 0.0);
+
+    vec3 noisePos = vPosition * 2.5;
+    float continent = fbm(noisePos, 6);
+    float landMask = smoothstep(-0.05, 0.08, continent);
+    float latitude = abs(vPosition.y) / length(vPosition);
+
+    float sst = clamp(1.0 - latitude + fbm(noisePos * 1.5 + 80.0, 3) * 0.15, 0.0, 1.0);
+
+    // Ocean gets color; land is dark gray
+    vec3 oceanColor = sstColor(sst);
+    vec3 landColor = vec3(0.12, 0.12, 0.10);
+    vec3 surfaceColor = mix(oceanColor, landColor, landMask);
+
+    float edgeMask = smoothstep(0.0, 0.06, abs(continent - 0.015));
+    surfaceColor *= mix(0.65, 1.0, edgeMask);
+
+    float lighting = ambient + diffuse * 0.7;
+    vec3 litColor = surfaceColor * lighting;
+
+    vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+    float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
+    litColor += vec3(0.15, 0.35, 0.80) * pow(rim, 3.5) * 0.2;
+
+    float terminator = smoothstep(-0.1, 0.15, NdotL);
+    vec3 finalColor = mix(surfaceColor * 0.3, litColor, terminator);
+
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;
+
+/**
+ * PRECIPITATION – blues/cyans for rain, white for heavy, gray/tan for dry.
+ */
+export const PRECIPITATION_EARTH_FRAGMENT = `
+  uniform vec3 lightDirection;
+  uniform float time;
+
+  varying vec3 vNormal;
+  varying vec3 vPosition;
+  varying vec2 vUv;
+  varying vec3 vWorldPosition;
+
+  ${NOISE_GLSL}
+
+  vec3 precipColor(float p) {
+    if (p < 0.15) return vec3(0.55, 0.45, 0.30);  // dry – tan
+    if (p < 0.35) return mix(vec3(0.55, 0.45, 0.30), vec3(0.30, 0.55, 0.35), (p - 0.15) / 0.2);
+    if (p < 0.55) return mix(vec3(0.30, 0.55, 0.35), vec3(0.10, 0.50, 0.75), (p - 0.35) / 0.2);
+    if (p < 0.75) return mix(vec3(0.10, 0.50, 0.75), vec3(0.15, 0.35, 0.85), (p - 0.55) / 0.2);
+    if (p < 0.90) return mix(vec3(0.15, 0.35, 0.85), vec3(0.60, 0.70, 0.95), (p - 0.75) / 0.15);
+    return mix(vec3(0.60, 0.70, 0.95), vec3(0.95, 0.95, 1.0), (p - 0.90) / 0.10);
+  }
+
+  void main() {
+    vec3 lightDir = normalize(lightDirection);
+    float NdotL = dot(vNormal, lightDir);
+    float ambient = 0.15;
+    float diffuse = max(NdotL, 0.0);
+
+    vec3 noisePos = vPosition * 2.5;
+    float continent = fbm(noisePos, 6);
+    float landMask = smoothstep(-0.05, 0.08, continent);
+    float latitude = abs(vPosition.y) / length(vPosition);
+
+    // Precipitation pattern: ITCZ near equator, mid-lat storms, dry subtropics
+    float itcz = exp(-pow((latitude - 0.05) * 8.0, 2.0)) * 0.6;
+    float midLatRain = exp(-pow((latitude - 0.45) * 6.0, 2.0)) * 0.4;
+    float drySubtrop = exp(-pow((latitude - 0.25) * 7.0, 2.0)) * -0.3;
+    float stormNoise = fbm(noisePos * 2.5 + vec3(time * 0.03, 0.0, 0.0), 4) * 0.3;
+
+    float precip = clamp(0.3 + itcz + midLatRain + drySubtrop + stormNoise, 0.0, 1.0);
+
+    vec3 surfaceColor = precipColor(precip);
+
+    float edgeMask = smoothstep(0.0, 0.06, abs(continent - 0.015));
+    surfaceColor *= mix(0.7, 1.0, edgeMask);
+
+    float lighting = ambient + diffuse * 0.7;
+    vec3 litColor = surfaceColor * lighting;
+
+    vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+    float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
+    litColor += vec3(0.20, 0.45, 0.85) * pow(rim, 3.5) * 0.2;
+
+    float terminator = smoothstep(-0.1, 0.15, NdotL);
+    vec3 finalColor = mix(surfaceColor * 0.3, litColor, terminator);
+
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;
+
+/**
+ * OZONE – purples, blues, and greens for ozone column density.
+ */
+export const OZONE_EARTH_FRAGMENT = `
+  uniform vec3 lightDirection;
+  uniform float time;
+
+  varying vec3 vNormal;
+  varying vec3 vPosition;
+  varying vec2 vUv;
+  varying vec3 vWorldPosition;
+
+  ${NOISE_GLSL}
+
+  vec3 ozoneColor(float o) {
+    if (o < 0.15) return vec3(0.15, 0.02, 0.20);   // ozone hole – dark purple
+    if (o < 0.3) return mix(vec3(0.15, 0.02, 0.20), vec3(0.30, 0.10, 0.60), (o - 0.15) / 0.15);
+    if (o < 0.5) return mix(vec3(0.30, 0.10, 0.60), vec3(0.15, 0.40, 0.70), (o - 0.3) / 0.2);
+    if (o < 0.7) return mix(vec3(0.15, 0.40, 0.70), vec3(0.20, 0.65, 0.45), (o - 0.5) / 0.2);
+    if (o < 0.85) return mix(vec3(0.20, 0.65, 0.45), vec3(0.60, 0.80, 0.20), (o - 0.7) / 0.15);
+    return mix(vec3(0.60, 0.80, 0.20), vec3(0.90, 0.90, 0.25), (o - 0.85) / 0.15);
+  }
+
+  void main() {
+    vec3 lightDir = normalize(lightDirection);
+    float NdotL = dot(vNormal, lightDir);
+    float ambient = 0.15;
+    float diffuse = max(NdotL, 0.0);
+
+    vec3 noisePos = vPosition * 2.5;
+    float continent = fbm(noisePos, 6);
+    float latitude = abs(vPosition.y) / length(vPosition);
+
+    // Ozone: thickest at mid-latitudes, ozone hole at south pole
+    float baseOzone = 0.6 + 0.2 * sin(latitude * 3.14);
+    float southPoleHole = (vPosition.y < 0.0) ? exp(-pow((latitude - 0.9) * 5.0, 2.0)) * -0.5 : 0.0;
+    float variation = fbm(noisePos * 1.5 + 150.0, 3) * 0.15;
+
+    float ozone = clamp(baseOzone + southPoleHole + variation, 0.0, 1.0);
+
+    vec3 surfaceColor = ozoneColor(ozone);
+
+    float edgeMask = smoothstep(0.0, 0.06, abs(continent - 0.015));
+    surfaceColor *= mix(0.7, 1.0, edgeMask);
+
+    float lighting = ambient + diffuse * 0.7;
+    vec3 litColor = surfaceColor * lighting;
+
+    vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+    float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
+    litColor += vec3(0.40, 0.20, 0.70) * pow(rim, 3.5) * 0.2;
+
+    float terminator = smoothstep(-0.1, 0.15, NdotL);
+    vec3 finalColor = mix(surfaceColor * 0.3, litColor, terminator);
+
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;
+
+/**
+ * GENERIC DATA OVERLAY – used for vital signs without a custom shader.
+ * Teal-to-orange gradient based on noise + latitude.
+ */
+export const GENERIC_DATA_EARTH_FRAGMENT = `
+  uniform vec3 lightDirection;
+  uniform float time;
+  uniform vec3 dataColor;
+
+  varying vec3 vNormal;
+  varying vec3 vPosition;
+  varying vec2 vUv;
+  varying vec3 vWorldPosition;
+
+  ${NOISE_GLSL}
+
+  void main() {
+    vec3 lightDir = normalize(lightDirection);
+    float NdotL = dot(vNormal, lightDir);
+    float ambient = 0.15;
+    float diffuse = max(NdotL, 0.0);
+
+    vec3 noisePos = vPosition * 2.5;
+    float continent = fbm(noisePos, 6);
+    float landMask = smoothstep(-0.05, 0.08, continent);
+    float latitude = abs(vPosition.y) / length(vPosition);
+
+    float dataValue = clamp(0.5 + fbm(noisePos * 2.0 + 500.0, 4) * 0.4 + (1.0 - latitude) * 0.2, 0.0, 1.0);
+
+    vec3 lowColor = vec3(0.05, 0.15, 0.35);
+    vec3 midColor = dataColor;
+    vec3 highColor = dataColor * 1.3 + vec3(0.2);
+    vec3 heatColor;
+    if (dataValue < 0.5) {
+      heatColor = mix(lowColor, midColor, dataValue / 0.5);
+    } else {
+      heatColor = mix(midColor, highColor, (dataValue - 0.5) / 0.5);
+    }
+
+    vec3 surfaceColor = mix(heatColor * 0.7, heatColor, landMask);
+
+    float edgeMask = smoothstep(0.0, 0.06, abs(continent - 0.015));
+    surfaceColor *= mix(0.65, 1.0, edgeMask);
+
+    float lighting = ambient + diffuse * 0.7;
+    vec3 litColor = surfaceColor * lighting;
+
+    vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+    float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
+    litColor += dataColor * pow(rim, 3.5) * 0.2;
+
+    float terminator = smoothstep(-0.1, 0.15, NdotL);
+    vec3 finalColor = mix(surfaceColor * 0.3, litColor, terminator);
 
     gl_FragColor = vec4(finalColor, 1.0);
   }
