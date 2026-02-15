@@ -34,10 +34,11 @@ body,
 #root {
   height: 100%;
   width: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: var(--color-space-black);
   color: var(--color-text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -152,7 +153,8 @@ button:focus-visible {
   top: 3.5rem;
   right: 0;
   bottom: 4rem;
-  width: 20rem;          /* 320px desktop */
+  width: 20rem;
+  /* 320px desktop */
   z-index: 40;
   border-radius: 1rem 0 0 1rem;
   overflow: hidden;
@@ -175,7 +177,8 @@ button:focus-visible {
 /* Large screens */
 @media (min-width: 1280px) {
   .right-panel {
-    width: 24rem;        /* 384px on xl */
+    width: 24rem;
+    /* 384px on xl */
   }
 }
 
