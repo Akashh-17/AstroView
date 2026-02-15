@@ -112,11 +112,15 @@ export default function HomePage() {
                 </div>
 
                 <h1 className="text-6xl md:text-8xl font-bold tracking-tight text-white mb-4 animate-fade-in" style={{ animationDelay: '200ms' }}>
+<<<<<<< HEAD
                     Astrolens <span className="bg-gradient-to-r from-[#4A90D9] to-[#6BB5FF] bg-clip-text text-transparent">Eyes</span>
+=======
+                    <span className="bg-gradient-to-r from-[#4A90D9] to-[#6BB5FF] bg-clip-text text-transparent">Astrolens</span>
+>>>>>>> 82c6cca67ea55cc803b8afe7926ef6c0bd8549de
                 </h1>
 
                 <p className="max-w-2xl text-base md:text-lg text-white/50 leading-relaxed mb-16 animate-fade-in" style={{ animationDelay: '400ms' }}>
-                    Experience Earth, our solar system, nearby asteroids, the universe, and the spacecraft exploring them with immersive real-time 3D web-based apps.
+                    Interactive 3D visualization of the Solar System and Near-Earth Objects.
                 </p>
 
                 {/* Scroll indicator */}
@@ -128,11 +132,13 @@ export default function HomePage() {
             </section>
 
             {/* Product Cards Section */}
-            <section className="relative z-10 px-6 pb-20 max-w-6xl mx-auto">
-                <p className="text-[10px] font-semibold tracking-[0.25em] uppercase text-white/30 text-center mb-10">
-                    Click any of these Eyes products to start exploring
-                </p>
+            <section className="relative z-10 min-h-screen w-full flex flex-col items-center justify-center px-6">
+                <div className="w-full max-w-4xl flex flex-col items-center">
+                    <p className="text-[10px] font-semibold tracking-[0.25em] uppercase text-white/30 text-center mb-10">
+                        Click any of these modules to start exploring
+                    </p>
 
+<<<<<<< HEAD
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                     <ProductCard
                         title="Eyes on the Solar System"
@@ -166,6 +172,34 @@ export default function HomePage() {
                         to="/solar-system"
                         delay={400}
                     />
+=======
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+                        <ProductCard
+                            title="Solar System"
+                            subtitle="Real-Time 3D Data Visualization: Past, Present, and Future"
+                            gradient="bg-gradient-to-br from-[#1a0a2e] via-[#2d1b4e] to-[#0a1628]"
+                            icon="🪐"
+                            onClick={goTo('/solar-system')}
+                            delay={100}
+                        />
+                        <ProductCard
+                            title="Asteroids"
+                            subtitle="Tracking near-Earth objects in real-time 3D"
+                            gradient="bg-gradient-to-br from-[#1a1a0a] via-[#2a2510] to-[#0a0a0a]"
+                            icon="☄️"
+                            onClick={goTo('/asteroids')}
+                            delay={200}
+                        />
+                        <ProductCard
+                            title="All Eyes on Earth"
+                            subtitle="Track satellites and space activity orbiting our planet in real-time"
+                            gradient="bg-gradient-to-br from-[#0d1b2a] via-[#1a2332] to-[#0a1520]"
+                            icon="🛰️"
+                            onClick={goTo('/earth-satellites')}
+                            delay={300}
+                        />
+                    </div>
+>>>>>>> 82c6cca67ea55cc803b8afe7926ef6c0bd8549de
                 </div>
             </section>
         </div>

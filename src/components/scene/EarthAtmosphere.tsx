@@ -4,6 +4,8 @@
  * Enhanced Fresnel-based atmospheric glow for planets with atmospheres.
  * Uses a custom shader for a soft, physically-inspired rim glow
  * that fades smoothly from edge to center.
+ *
+ * Configurable per-planet: falloff, scale, and color.
  */
 
 import { useMemo } from 'react';
@@ -13,18 +15,25 @@ interface EarthAtmosphereProps {
     radius: number;
     color?: string;
     opacity?: number;
+    /** How far the glow extends beyond the planet (1.08 = 8% larger, default) */
+    scale?: number;
+    /** Fresnel power exponent — higher = thinner glow concentrated at edges */
+    falloff?: number;
 }
 
 export default function EarthAtmosphere({
     radius,
     color = '#6BB5FF',
     opacity = 0.35,
+    scale = 1.08,
+    falloff = 2.0,
 }: EarthAtmosphereProps) {
     const material = useMemo(() => {
         return new THREE.ShaderMaterial({
             uniforms: {
                 glowColor: { value: new THREE.Color(color) },
                 intensity: { value: opacity },
+                falloffPower: { value: falloff },
             },
             vertexShader: `
         varying vec3 vNormal;
@@ -40,6 +49,7 @@ export default function EarthAtmosphere({
             fragmentShader: `
         uniform vec3 glowColor;
         uniform float intensity;
+        uniform float falloffPower;
         varying vec3 vNormal;
         varying vec3 vViewPosition;
 
@@ -47,8 +57,8 @@ export default function EarthAtmosphere({
           vec3 viewDir = normalize(-vViewPosition);
           float fresnel = 1.0 - dot(vNormal, viewDir);
 
-          // Multi-layer falloff for a softer, more natural glow
-          float glow = pow(fresnel, 2.0) * 0.8 + pow(fresnel, 5.0) * 0.4;
+          // Configurable falloff: thinner for thin atmospheres, broader for thick
+          float glow = pow(fresnel, falloffPower) * 0.8 + pow(fresnel, falloffPower + 3.0) * 0.4;
 
           // Fade at very edge to prevent hard cutoff
           float edgeFade = smoothstep(0.0, 0.15, fresnel);
@@ -61,11 +71,11 @@ export default function EarthAtmosphere({
             side: THREE.FrontSide,
             depthWrite: false,
         });
-    }, [color, opacity]);
+    }, [color, opacity, falloff]);
 
     return (
         <mesh material={material}>
-            <sphereGeometry args={[radius * 1.08, 48, 48]} />
+            <sphereGeometry args={[radius * scale, 48, 48]} />
         </mesh>
     );
 }

@@ -15,6 +15,7 @@ import {
     VENUS_FRAGMENT,
     MERCURY_FRAGMENT,
     ICE_GIANT_FRAGMENT,
+    NEPTUNE_FRAGMENT,
     MOON_FRAGMENT,
     SUN_FRAGMENT,
     SATURN_RING_FRAGMENT,
@@ -95,12 +96,10 @@ export function createPlanetMaterial(
         case 'neptune':
             return new THREE.ShaderMaterial({
                 vertexShader: PLANET_VERTEX,
-                fragmentShader: ICE_GIANT_FRAGMENT,
+                fragmentShader: NEPTUNE_FRAGMENT,
                 uniforms: {
                     lightDirection: { value: new THREE.Vector3(1, 0, 0) },
                     time: { value: 0 },
-                    baseColor: { value: new THREE.Color(0.25, 0.33, 0.73) },
-                    bandColor: { value: new THREE.Color(0.35, 0.45, 0.85) },
                 },
             });
 
@@ -111,8 +110,8 @@ export function createPlanetMaterial(
                 uniforms: {
                     lightDirection: { value: new THREE.Vector3(1, 0, 0) },
                     time: { value: 0 },
-                    baseColor: { value: new THREE.Color(0.45, 0.71, 0.77) },
-                    bandColor: { value: new THREE.Color(0.55, 0.82, 0.88) },
+                    baseColor: { value: new THREE.Color(0.31, 0.82, 0.91) },
+                    bandColor: { value: new THREE.Color(0.40, 0.88, 0.95) },
                 },
             });
 
