@@ -1,8 +1,8 @@
 /**
  * HomePage.tsx — Landing page with hero and product cards
  */
-import { useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 // ─── STAR CANVAS BACKGROUND ─────────────────────────────────────────────────
 function StarCanvas() {
@@ -67,15 +67,15 @@ interface CardProps {
     subtitle: string;
     gradient: string;
     icon: string;
-    onClick: () => void;
+    to: string;
     delay: number;
 }
 
-function ProductCard({ title, subtitle, gradient, icon, onClick, delay }: CardProps) {
+function ProductCard({ title, subtitle, gradient, icon, to, delay }: CardProps) {
     return (
-        <button
-            onClick={onClick}
-            className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-sm transition-all duration-500 hover:scale-[1.03] hover:border-white/[0.15] hover:bg-white/[0.06] hover:shadow-[0_0_40px_rgba(75,130,220,0.15)] text-left animate-fade-in"
+        <Link
+            to={to}
+            className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-sm transition-all duration-500 hover:scale-[1.03] hover:border-white/[0.15] hover:bg-white/[0.06] hover:shadow-[0_0_40px_rgba(75,130,220,0.15)] text-left animate-fade-in no-underline"
             style={{ animationDelay: `${delay}ms` }}
         >
             {/* Gradient thumbnail */}
@@ -91,16 +91,12 @@ function ProductCard({ title, subtitle, gradient, icon, onClick, delay }: CardPr
             </div>
             {/* Hover glow strip */}
             <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#4A90D9] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        </button>
+        </Link>
     );
 }
 
 // ─── HOME PAGE ───────────────────────────────────────────────────────────────
 export default function HomePage() {
-    const navigate = useNavigate();
-
-    const goTo = useCallback((path: string) => () => navigate(path), [navigate]);
-
     return (
         <div className="relative h-full w-full overflow-y-auto">
             {/* Star background */}
@@ -108,7 +104,7 @@ export default function HomePage() {
 
             {/* Hero Section */}
             <section className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center">
-                {/* NASA-style logo mark */}
+                {/* Astrolens logo mark */}
                 <div className="mb-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
                     <div className="w-16 h-16 mx-auto rounded-full border-2 border-white/20 flex items-center justify-center">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#4A90D9] to-[#0B3D91]" />
@@ -116,7 +112,7 @@ export default function HomePage() {
                 </div>
 
                 <h1 className="text-6xl md:text-8xl font-bold tracking-tight text-white mb-4 animate-fade-in" style={{ animationDelay: '200ms' }}>
-                    NASA's <span className="bg-gradient-to-r from-[#4A90D9] to-[#6BB5FF] bg-clip-text text-transparent">Eyes</span>
+                    Astrolens <span className="bg-gradient-to-r from-[#4A90D9] to-[#6BB5FF] bg-clip-text text-transparent">Eyes</span>
                 </h1>
 
                 <p className="max-w-2xl text-base md:text-lg text-white/50 leading-relaxed mb-16 animate-fade-in" style={{ animationDelay: '400ms' }}>
@@ -143,7 +139,7 @@ export default function HomePage() {
                         subtitle="Real-Time 3D Data Visualization: Past, Present, and Future"
                         gradient="bg-gradient-to-br from-[#1a0a2e] via-[#2d1b4e] to-[#0a1628]"
                         icon="🪐"
-                        onClick={goTo('/solar-system')}
+                        to="/solar-system"
                         delay={100}
                     />
                     <ProductCard
@@ -151,7 +147,7 @@ export default function HomePage() {
                         subtitle="Tracking near-Earth objects in real-time 3D"
                         gradient="bg-gradient-to-br from-[#1a1a0a] via-[#2a2510] to-[#0a0a0a]"
                         icon="☄️"
-                        onClick={goTo('/asteroids')}
+                        to="/asteroids"
                         delay={200}
                     />
                     <ProductCard
@@ -159,7 +155,7 @@ export default function HomePage() {
                         subtitle="See the planet's vital signs in 3D"
                         gradient="bg-gradient-to-br from-[#0a1e28] via-[#0b2d3e] to-[#0a1218]"
                         icon="🌍"
-                        onClick={goTo('/solar-system')}
+                        to="/solar-system"
                         delay={300}
                     />
                     <ProductCard
@@ -167,7 +163,7 @@ export default function HomePage() {
                         subtitle="Explore alien worlds beyond our solar system"
                         gradient="bg-gradient-to-br from-[#1a0a1e] via-[#2d0a2e] to-[#0a0818]"
                         icon="✨"
-                        onClick={goTo('/solar-system')}
+                        to="/solar-system"
                         delay={400}
                     />
                 </div>

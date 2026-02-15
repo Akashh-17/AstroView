@@ -726,10 +726,590 @@ export const DEIMOS: CelestialBody = {
   },
 };
 
+// ─── NAMED ASTEROIDS ────────────────────────────────────────────────────────────
+
+export const ASTEROID_2026_BE7: CelestialBody = {
+  id: 'asteroid-2026-be7',
+  name: '2026 BE7',
+  orbital: {
+    semiMajorAxis: 1.15,
+    eccentricity: 0.22,
+    inclination: 4.5,
+    longitudeOfAscendingNode: 120.0,
+    argumentOfPerihelion: 200.0,
+    meanAnomalyAtEpoch: 45.0,
+    orbitalPeriod: 1.23,
+  },
+  physical: {
+    radius: 0.025,
+    mass: 0.0000000001,
+    rotationPeriod: 6.0,
+    axialTilt: 0,
+  },
+  display: {
+    color: '#FF6B6B',
+    description: '2026 BE7 is a near-Earth asteroid discovered in 2026. It makes periodic close approaches to Earth.',
+    category: 'asteroid',
+  },
+};
+
+export const ASTEROID_2026_BX4: CelestialBody = {
+  id: 'asteroid-2026-bx4',
+  name: '2026 BX4',
+  orbital: {
+    semiMajorAxis: 1.32,
+    eccentricity: 0.30,
+    inclination: 6.2,
+    longitudeOfAscendingNode: 85.0,
+    argumentOfPerihelion: 155.0,
+    meanAnomalyAtEpoch: 120.0,
+    orbitalPeriod: 1.52,
+  },
+  physical: {
+    radius: 0.015,
+    mass: 0.0000000001,
+    rotationPeriod: 4.2,
+    axialTilt: 0,
+  },
+  display: {
+    color: '#FFA94D',
+    description: '2026 BX4 is a small near-Earth asteroid with an orbit that brings it close to Earth periodically.',
+    category: 'asteroid',
+  },
+};
+
+export const ASTEROID_2026_BQ8: CelestialBody = {
+  id: 'asteroid-2026-bq8',
+  name: '2026 BQ8',
+  orbital: {
+    semiMajorAxis: 1.08,
+    eccentricity: 0.18,
+    inclination: 2.8,
+    longitudeOfAscendingNode: 200.0,
+    argumentOfPerihelion: 310.0,
+    meanAnomalyAtEpoch: 80.0,
+    orbitalPeriod: 1.12,
+  },
+  physical: {
+    radius: 0.030,
+    mass: 0.0000000001,
+    rotationPeriod: 8.5,
+    axialTilt: 0,
+  },
+  display: {
+    color: '#FFD43B',
+    description: '2026 BQ8 is a near-Earth asteroid discovered in early 2026 with a relatively short orbital period.',
+    category: 'asteroid',
+  },
+};
+
+export const ASTEROID_2026_AJ17: CelestialBody = {
+  id: 'asteroid-2026-aj17',
+  name: '2026 AJ17',
+  orbital: {
+    semiMajorAxis: 1.22,
+    eccentricity: 0.25,
+    inclination: 5.1,
+    longitudeOfAscendingNode: 145.0,
+    argumentOfPerihelion: 275.0,
+    meanAnomalyAtEpoch: 95.0,
+    orbitalPeriod: 1.35,
+  },
+  physical: {
+    radius: 0.017,
+    mass: 0.0000000001,
+    rotationPeriod: 5.8,
+    axialTilt: 0,
+  },
+  display: {
+    color: '#8CE99A',
+    description: '2026 AJ17 is a near-Earth asteroid making a close approach in February 2026.',
+    category: 'asteroid',
+  },
+};
+
+export const ASTEROID_2026_CU: CelestialBody = {
+  id: 'asteroid-2026-cu',
+  name: '2026 CU',
+  orbital: {
+    semiMajorAxis: 1.05,
+    eccentricity: 0.15,
+    inclination: 3.4,
+    longitudeOfAscendingNode: 168.0,
+    argumentOfPerihelion: 240.0,
+    meanAnomalyAtEpoch: 60.0,
+    orbitalPeriod: 1.08,
+  },
+  physical: {
+    radius: 0.013,
+    mass: 0.0000000001,
+    rotationPeriod: 3.6,
+    axialTilt: 0,
+  },
+  display: {
+    color: '#74C0FC',
+    description: '2026 CU is a small near-Earth asteroid discovered in 2026 with a very close approach trajectory.',
+    category: 'asteroid',
+  },
+};
+
+export const OSIRIS_APEX: CelestialBody = {
+  id: 'osiris-apex',
+  name: 'OSIRIS-APEX',
+  orbital: {
+    semiMajorAxis: 0.922,
+    eccentricity: 0.191,
+    inclination: 3.33,
+    longitudeOfAscendingNode: 204.43,
+    argumentOfPerihelion: 126.37,
+    meanAnomalyAtEpoch: 270.0,
+    orbitalPeriod: 0.886,
+  },
+  physical: {
+    radius: 0.180,
+    mass: 0.0000000001,
+    rotationPeriod: 4.3,
+    axialTilt: 0,
+  },
+  display: {
+    color: '#69DB7C',
+    description: 'OSIRIS-APEX (formerly OSIRIS-REx) is targeting asteroid Apophis for a close encounter. The spacecraft will study the asteroid during its 2029 Earth flyby.',
+    category: 'asteroid',
+  },
+};
+
+export const APOPHIS: CelestialBody = {
+  id: 'apophis',
+  name: 'Apophis',
+  orbital: {
+    semiMajorAxis: 0.9224,
+    eccentricity: 0.1911,
+    inclination: 3.331,
+    longitudeOfAscendingNode: 204.43,
+    argumentOfPerihelion: 126.37,
+    meanAnomalyAtEpoch: 215.54,
+    orbitalPeriod: 0.886,
+  },
+  physical: {
+    radius: 0.185,
+    mass: 0.000000027,
+    rotationPeriod: 30.4,
+    axialTilt: 0,
+  },
+  display: {
+    color: '#FF4444',
+    description: 'Apophis (99942) is a near-Earth asteroid that will pass extremely close to Earth on April 13, 2029 — within 31,000 km, closer than geostationary satellites.',
+    category: 'asteroid',
+  },
+};
+
+export const EROS: CelestialBody = {
+  id: 'eros',
+  name: 'Eros',
+  orbital: {
+    semiMajorAxis: 1.458,
+    eccentricity: 0.2226,
+    inclination: 10.829,
+    longitudeOfAscendingNode: 304.32,
+    argumentOfPerihelion: 178.82,
+    meanAnomalyAtEpoch: 208.12,
+    orbitalPeriod: 1.76,
+  },
+  physical: {
+    radius: 8.42,
+    mass: 0.0000067,
+    rotationPeriod: 5.27,
+    axialTilt: 0,
+  },
+  display: {
+    color: '#E8A838',
+    description: 'Eros (433) is the second-largest near-Earth asteroid. It was the first asteroid to be orbited by a spacecraft (NEAR Shoemaker, 2000).',
+    category: 'asteroid',
+  },
+};
+
+export const GASPRA: CelestialBody = {
+  id: 'gaspra',
+  name: 'Gaspra',
+  orbital: {
+    semiMajorAxis: 2.2096,
+    eccentricity: 0.1734,
+    inclination: 4.102,
+    longitudeOfAscendingNode: 253.16,
+    argumentOfPerihelion: 132.43,
+    meanAnomalyAtEpoch: 293.66,
+    orbitalPeriod: 3.29,
+  },
+  physical: {
+    radius: 6.1,
+    mass: 0.00000001,
+    rotationPeriod: 7.042,
+    axialTilt: 0,
+  },
+  display: {
+    color: '#A8A060',
+    description: 'Gaspra (951) was the first asteroid to be closely visited by a spacecraft when Galileo flew by it in 1991.',
+    category: 'asteroid',
+  },
+};
+
+export const IDA: CelestialBody = {
+  id: 'ida',
+  name: 'Ida',
+  orbital: {
+    semiMajorAxis: 2.8616,
+    eccentricity: 0.0412,
+    inclination: 1.138,
+    longitudeOfAscendingNode: 324.02,
+    argumentOfPerihelion: 113.0,
+    meanAnomalyAtEpoch: 55.88,
+    orbitalPeriod: 4.84,
+  },
+  physical: {
+    radius: 15.7,
+    mass: 0.00004,
+    rotationPeriod: 4.634,
+    axialTilt: 0,
+  },
+  display: {
+    color: '#B8A878',
+    description: 'Ida (243) is an asteroid in the main belt. The Galileo spacecraft discovered its tiny moon Dactyl during a flyby in 1993.',
+    category: 'asteroid',
+  },
+};
+
+export const DINKINESH: CelestialBody = {
+  id: 'dinkinesh',
+  name: 'Dinkinesh',
+  orbital: {
+    semiMajorAxis: 2.1924,
+    eccentricity: 0.1134,
+    inclination: 2.077,
+    longitudeOfAscendingNode: 10.64,
+    argumentOfPerihelion: 290.61,
+    meanAnomalyAtEpoch: 176.0,
+    orbitalPeriod: 3.25,
+  },
+  physical: {
+    radius: 0.39,
+    mass: 0.0000000001,
+    rotationPeriod: 3.73,
+    axialTilt: 0,
+  },
+  display: {
+    color: '#70C4D8',
+    description: 'Dinkinesh (152830) was visited by NASA\'s Lucy spacecraft in November 2023, revealing it to be a contact binary with its own moonlet.',
+    category: 'asteroid',
+  },
+};
+
+export const RYUGU: CelestialBody = {
+  id: 'ryugu',
+  name: 'Ryugu',
+  orbital: {
+    semiMajorAxis: 1.1896,
+    eccentricity: 0.1903,
+    inclination: 5.884,
+    longitudeOfAscendingNode: 251.62,
+    argumentOfPerihelion: 211.43,
+    meanAnomalyAtEpoch: 315.85,
+    orbitalPeriod: 1.30,
+  },
+  physical: {
+    radius: 0.45,
+    mass: 0.00000045,
+    rotationPeriod: 7.627,
+    axialTilt: 0,
+  },
+  display: {
+    color: '#4DABF7',
+    description: 'Ryugu (162173) is a near-Earth asteroid visited by JAXA\'s Hayabusa2 mission, which returned samples to Earth in December 2020.',
+    category: 'asteroid',
+  },
+};
+
+// ─── ADDITIONAL NAMED ASTEROIDS (matching Astrolens Eyes on Asteroids) ────────────
+
+export const VESTA: CelestialBody = {
+  id: 'vesta',
+  name: 'Vesta',
+  orbital: {
+    semiMajorAxis: 2.3615,
+    eccentricity: 0.0887,
+    inclination: 7.134,
+    longitudeOfAscendingNode: 103.85,
+    argumentOfPerihelion: 149.83,
+    meanAnomalyAtEpoch: 20.86,
+    orbitalPeriod: 3.63,
+  },
+  physical: { radius: 262.7, mass: 0.00013, rotationPeriod: 5.342, axialTilt: 29 },
+  display: { color: '#C4A882', description: 'Vesta (4) is the second-largest asteroid in the main belt, visited by NASA\'s Dawn spacecraft in 2011-2012.', category: 'asteroid' },
+};
+
+export const CERES: CelestialBody = {
+  id: 'ceres',
+  name: 'Ceres',
+  orbital: {
+    semiMajorAxis: 2.7675,
+    eccentricity: 0.0758,
+    inclination: 10.594,
+    longitudeOfAscendingNode: 80.393,
+    argumentOfPerihelion: 73.115,
+    meanAnomalyAtEpoch: 77.37,
+    orbitalPeriod: 4.60,
+  },
+  physical: { radius: 469.73, mass: 0.00047, rotationPeriod: 9.074, axialTilt: 4 },
+  display: { color: '#8899AA', description: 'Ceres (1) is the largest object in the asteroid belt and the only dwarf planet in the inner solar system, visited by Dawn in 2015.', category: 'asteroid' },
+};
+
+export const ITOKAWA: CelestialBody = {
+  id: 'itokawa',
+  name: 'Itokawa',
+  orbital: {
+    semiMajorAxis: 1.3241,
+    eccentricity: 0.2802,
+    inclination: 1.622,
+    longitudeOfAscendingNode: 69.095,
+    argumentOfPerihelion: 162.76,
+    meanAnomalyAtEpoch: 310.0,
+    orbitalPeriod: 1.52,
+  },
+  physical: { radius: 0.165, mass: 0.0000000004, rotationPeriod: 12.132, axialTilt: 0 },
+  display: { color: '#D4B896', description: 'Itokawa (25143) was visited by JAXA\'s Hayabusa mission, the first to return asteroid samples to Earth in 2010.', category: 'asteroid' },
+};
+
+export const BENNU: CelestialBody = {
+  id: 'bennu',
+  name: 'Bennu',
+  orbital: {
+    semiMajorAxis: 1.1264,
+    eccentricity: 0.2037,
+    inclination: 6.035,
+    longitudeOfAscendingNode: 2.060,
+    argumentOfPerihelion: 66.223,
+    meanAnomalyAtEpoch: 101.70,
+    orbitalPeriod: 1.20,
+  },
+  physical: { radius: 0.2625, mass: 0.000000073, rotationPeriod: 4.296, axialTilt: 0 },
+  display: { color: '#7AB8D4', description: 'Bennu (101955) is the target of NASA\'s OSIRIS-REx mission, which returned samples in September 2023.', category: 'asteroid' },
+};
+
+export const PSYCHE: CelestialBody = {
+  id: 'psyche',
+  name: 'Psyche',
+  orbital: {
+    semiMajorAxis: 2.9212,
+    eccentricity: 0.1339,
+    inclination: 3.095,
+    longitudeOfAscendingNode: 150.19,
+    argumentOfPerihelion: 228.05,
+    meanAnomalyAtEpoch: 152.0,
+    orbitalPeriod: 4.99,
+  },
+  physical: { radius: 113, mass: 0.000012, rotationPeriod: 4.196, axialTilt: 0 },
+  display: { color: '#B0B8C4', description: 'Psyche (16) is a metal-rich asteroid that NASA\'s Psyche spacecraft is en route to study, arriving in 2029.', category: 'asteroid' },
+};
+
+export const DIDYMOS: CelestialBody = {
+  id: 'didymos',
+  name: 'Didymos',
+  orbital: {
+    semiMajorAxis: 1.6444,
+    eccentricity: 0.3840,
+    inclination: 3.408,
+    longitudeOfAscendingNode: 73.21,
+    argumentOfPerihelion: 319.32,
+    meanAnomalyAtEpoch: 182.0,
+    orbitalPeriod: 2.11,
+  },
+  physical: { radius: 0.39, mass: 0.00000000053, rotationPeriod: 2.26, axialTilt: 0 },
+  display: { color: '#E0C880', description: 'Didymos is a binary near-Earth asteroid. NASA\'s DART mission impacted its moonlet Dimorphos in 2022 to test planetary defense.', category: 'asteroid' },
+};
+
+export const ANNEFRANK: CelestialBody = {
+  id: 'annefrank',
+  name: 'Annefrank',
+  orbital: {
+    semiMajorAxis: 2.2125,
+    eccentricity: 0.2282,
+    inclination: 4.249,
+    longitudeOfAscendingNode: 47.15,
+    argumentOfPerihelion: 356.08,
+    meanAnomalyAtEpoch: 115.0,
+    orbitalPeriod: 3.29,
+  },
+  physical: { radius: 3.4, mass: 0.000000001, rotationPeriod: 15.0, axialTilt: 0 },
+  display: { color: '#AA9988', description: 'Annefrank (5535) was an asteroid flyby target for the Stardust spacecraft in 2002.', category: 'asteroid' },
+};
+
+export const BRAILLE: CelestialBody = {
+  id: 'braille',
+  name: 'Braille',
+  orbital: {
+    semiMajorAxis: 2.3417,
+    eccentricity: 0.4327,
+    inclination: 28.97,
+    longitudeOfAscendingNode: 241.90,
+    argumentOfPerihelion: 356.62,
+    meanAnomalyAtEpoch: 46.0,
+    orbitalPeriod: 3.58,
+  },
+  physical: { radius: 0.8, mass: 0.0000000001, rotationPeriod: 226.4, axialTilt: 0 },
+  display: { color: '#9090A0', description: 'Braille (9969) was visited by Deep Space 1 in 1999, one of the first asteroid flybys.', category: 'asteroid' },
+};
+
+export const MATHILDE: CelestialBody = {
+  id: 'mathilde',
+  name: 'Mathilde',
+  orbital: {
+    semiMajorAxis: 2.6461,
+    eccentricity: 0.2664,
+    inclination: 6.710,
+    longitudeOfAscendingNode: 179.58,
+    argumentOfPerihelion: 157.36,
+    meanAnomalyAtEpoch: 219.3,
+    orbitalPeriod: 4.31,
+  },
+  physical: { radius: 26.4, mass: 0.0000052, rotationPeriod: 417.7, axialTilt: 0 },
+  display: { color: '#7A7A88', description: 'Mathilde (253) is a main-belt asteroid visited by NEAR Shoemaker in 1997, revealing large impact craters.', category: 'asteroid' },
+};
+
+export const BORRELLY: CelestialBody = {
+  id: 'borrelly',
+  name: 'Borrelly',
+  orbital: {
+    semiMajorAxis: 3.6107,
+    eccentricity: 0.6231,
+    inclination: 30.323,
+    longitudeOfAscendingNode: 75.43,
+    argumentOfPerihelion: 353.35,
+    meanAnomalyAtEpoch: 30.0,
+    orbitalPeriod: 6.86,
+  },
+  physical: { radius: 4.0, mass: 0.000000002, rotationPeriod: 25.0, axialTilt: 0 },
+  display: { color: '#6688AA', description: 'Borrelly (19P) is a comet visited by Deep Space 1 in 2001, revealing a dark, bowling-pin-shaped nucleus.', category: 'asteroid' },
+};
+
+export const CHURYUMOV_GERASIMENKO: CelestialBody = {
+  id: '67p',
+  name: '67P/Churyumov-Gerasimenko',
+  orbital: {
+    semiMajorAxis: 3.4630,
+    eccentricity: 0.6410,
+    inclination: 7.040,
+    longitudeOfAscendingNode: 50.15,
+    argumentOfPerihelion: 12.78,
+    meanAnomalyAtEpoch: 50.0,
+    orbitalPeriod: 6.44,
+  },
+  physical: { radius: 2.0, mass: 0.00000001, rotationPeriod: 12.4, axialTilt: 0 },
+  display: { color: '#5577AA', description: '67P/Churyumov-Gerasimenko is the comet visited by ESA\'s Rosetta mission, which deployed the Philae lander in 2014.', category: 'asteroid' },
+};
+
+export const HARTLEY2: CelestialBody = {
+  id: 'hartley2',
+  name: 'Hartley 2',
+  orbital: {
+    semiMajorAxis: 3.4713,
+    eccentricity: 0.6950,
+    inclination: 13.617,
+    longitudeOfAscendingNode: 219.76,
+    argumentOfPerihelion: 181.22,
+    meanAnomalyAtEpoch: 120.0,
+    orbitalPeriod: 6.46,
+  },
+  physical: { radius: 0.57, mass: 0.0000000001, rotationPeriod: 18.0, axialTilt: 0 },
+  display: { color: '#4488BB', description: 'Hartley 2 (103P) is a comet visited by NASA\'s EPOXI mission in 2010, revealing CO2-driven jets.', category: 'asteroid' },
+};
+
+export const EURYBATES: CelestialBody = {
+  id: 'eurybates',
+  name: 'Eurybates',
+  orbital: {
+    semiMajorAxis: 5.1911,
+    eccentricity: 0.0908,
+    inclination: 7.997,
+    longitudeOfAscendingNode: 43.58,
+    argumentOfPerihelion: 39.55,
+    meanAnomalyAtEpoch: 340.0,
+    orbitalPeriod: 11.83,
+  },
+  physical: { radius: 32.0, mass: 0.0000001, rotationPeriod: 8.7, axialTilt: 0 },
+  display: { color: '#99AACC', description: 'Eurybates (3548) is a Jupiter Trojan asteroid and future target of NASA\'s Lucy mission.', category: 'asteroid' },
+};
+
+export const LEUCUS: CelestialBody = {
+  id: 'leucus',
+  name: 'Leucus',
+  orbital: {
+    semiMajorAxis: 5.2900,
+    eccentricity: 0.0632,
+    inclination: 11.48,
+    longitudeOfAscendingNode: 213.54,
+    argumentOfPerihelion: 102.73,
+    meanAnomalyAtEpoch: 260.0,
+    orbitalPeriod: 12.17,
+  },
+  physical: { radius: 20.0, mass: 0.00000001, rotationPeriod: 445.7, axialTilt: 0 },
+  display: { color: '#8899BB', description: 'Leucus (11351) is a Jupiter Trojan asteroid and target of NASA\'s Lucy mission.', category: 'asteroid' },
+};
+
+export const ORUS: CelestialBody = {
+  id: 'orus',
+  name: 'Orus',
+  orbital: {
+    semiMajorAxis: 5.2280,
+    eccentricity: 0.0570,
+    inclination: 8.48,
+    longitudeOfAscendingNode: 74.97,
+    argumentOfPerihelion: 198.84,
+    meanAnomalyAtEpoch: 200.0,
+    orbitalPeriod: 11.95,
+  },
+  physical: { radius: 25.5, mass: 0.00000002, rotationPeriod: 13.5, axialTilt: 0 },
+  display: { color: '#7788AA', description: 'Orus (21900) is a Jupiter Trojan asteroid and target of NASA\'s Lucy mission.', category: 'asteroid' },
+};
+
+export const TEMPEL1: CelestialBody = {
+  id: 'tempel1',
+  name: 'Tempel 1',
+  orbital: {
+    semiMajorAxis: 3.1383,
+    eccentricity: 0.5121,
+    inclination: 10.474,
+    longitudeOfAscendingNode: 68.93,
+    argumentOfPerihelion: 178.93,
+    meanAnomalyAtEpoch: 200.0,
+    orbitalPeriod: 5.56,
+  },
+  physical: { radius: 3.0, mass: 0.0000001, rotationPeriod: 40.7, axialTilt: 0 },
+  display: { color: '#6699BB', description: 'Tempel 1 (9P) is a comet famously impacted by NASA\'s Deep Impact mission in 2005 to study its interior.', category: 'asteroid' },
+};
+
+export const PSYCHE16: CelestialBody = {
+  id: '16psyche',
+  name: '16 Psyche',
+  orbital: {
+    semiMajorAxis: 2.9230,
+    eccentricity: 0.1340,
+    inclination: 3.096,
+    longitudeOfAscendingNode: 150.20,
+    argumentOfPerihelion: 228.10,
+    meanAnomalyAtEpoch: 155.0,
+    orbitalPeriod: 5.00,
+  },
+  physical: { radius: 113, mass: 0.000012, rotationPeriod: 4.196, axialTilt: 0 },
+  display: { color: '#A8B0C0', description: '16 Psyche is one of the most massive asteroids, thought to be the exposed core of a protoplanet. Target of NASA\'s Psyche mission.', category: 'asteroid' },
+};
+
 // ─── COLLECTIONS ────────────────────────────────────────────────────────────────
 
 export const PLANETS: CelestialBody[] = [
   MERCURY, VENUS, EARTH, MARS, JUPITER, SATURN, URANUS, NEPTUNE,
+];
+
+export const INNER_PLANETS: CelestialBody[] = [
+  MERCURY, VENUS, EARTH, MARS,
 ];
 
 export const MOONS: CelestialBody[] = [
@@ -737,7 +1317,16 @@ export const MOONS: CelestialBody[] = [
   MIRANDA, ARIEL, TITANIA, PHOBOS, DEIMOS,
 ];
 
-export const ALL_BODIES: CelestialBody[] = [SUN, ...PLANETS, ...MOONS];
+export const NAMED_ASTEROIDS: CelestialBody[] = [
+  ASTEROID_2026_BE7, ASTEROID_2026_BX4, ASTEROID_2026_BQ8,
+  ASTEROID_2026_AJ17, ASTEROID_2026_CU,
+  OSIRIS_APEX, APOPHIS, EROS, GASPRA, IDA, DINKINESH, RYUGU,
+  VESTA, CERES, ITOKAWA, BENNU, PSYCHE, DIDYMOS, ANNEFRANK,
+  BRAILLE, MATHILDE, BORRELLY, CHURYUMOV_GERASIMENKO, HARTLEY2,
+  EURYBATES, LEUCUS, ORUS, TEMPEL1, PSYCHE16,
+];
+
+export const ALL_BODIES: CelestialBody[] = [SUN, ...PLANETS, ...MOONS, ...NAMED_ASTEROIDS];
 
 /**
  * Look up any celestial body by its ID.
@@ -760,3 +1349,24 @@ export const ASTEROID_BELT = {
   particleSize: 0.08,
   color: '#887766',
 };
+
+/**
+ * Simulated close approach data for the asteroid watch sidebar.
+ */
+export interface CloseApproach {
+  asteroidId: string;
+  asteroidName: string;
+  date: string;
+  time: string;
+  distanceKm: number;
+  estimatedSizeM: number;
+  isHazardous: boolean;
+}
+
+export const CLOSE_APPROACHES: CloseApproach[] = [
+  { asteroidId: 'asteroid-2026-bx4', asteroidName: '2026 BX4', date: '2026-02-16', time: '9:06:26 PM', distanceKm: 2_941_523, estimatedSizeM: 223.1, isHazardous: false },
+  { asteroidId: 'asteroid-2026-aj17', asteroidName: '2026 AJ17', date: '2026-02-18', time: '2:58:26 AM', distanceKm: 6_659_369, estimatedSizeM: 33.1, isHazardous: false },
+  { asteroidId: 'asteroid-2026-cu', asteroidName: '2026 CU', date: '2026-02-18', time: '10:06:10 PM', distanceKm: 2_075_021, estimatedSizeM: 25.8, isHazardous: false },
+  { asteroidId: 'asteroid-2026-be7', asteroidName: '2026 BE7', date: '2026-02-20', time: '4:22:00 AM', distanceKm: 1_200_000, estimatedSizeM: 50.0, isHazardous: false },
+  { asteroidId: 'asteroid-2026-bq8', asteroidName: '2026 BQ8', date: '2026-02-25', time: '11:30:45 AM', distanceKm: 5_800_000, estimatedSizeM: 60.0, isHazardous: false },
+];

@@ -1,6 +1,6 @@
 /**
  * RightPanel.tsx — Context panel showing selected body details
- * Responsive, works for Sun + all planets with realistic data
+ * Supports Sun, planets, moons, and asteroids
  */
 import { BODY_MAP } from '../../data/planetaryData';
 import { useSolarSystemStore } from '../../store/solarSystemStore';

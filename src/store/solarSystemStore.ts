@@ -1,17 +1,16 @@
 /**
  * solarSystemStore.ts — Solar system simulation state
+ * Supports time controls with 0.1x–1000x speed factors
  */
 import { create } from 'zustand';
 import { currentJulianDate } from '../engine/timeEngine';
 
 export const TIME_SPEEDS = [
-    { label: '1s', factor: 1 },
-    { label: '1m', factor: 60 },
-    { label: '1h', factor: 3600 },
-    { label: '1d', factor: 86400 },
-    { label: '10d', factor: 864000 },
-    { label: '30d', factor: 2592000 },
-    { label: '1y', factor: 31536000 },
+    { label: '0.1x', factor: 0.1 * 86400 },
+    { label: '1x', factor: 1 * 86400 },
+    { label: '10x', factor: 10 * 86400 },
+    { label: '100x', factor: 100 * 86400 },
+    { label: '1000x', factor: 1000 * 86400 },
 ];
 
 interface SolarSystemState {
@@ -30,6 +29,8 @@ interface SolarSystemState {
     showMoons: boolean;
     showAsteroids: boolean;
     showGrid: boolean;
+    // Camera zoom
+    zoomLevel: number;
     // Actions
     tick: (delta: number) => void;
     togglePlay: () => void;
@@ -45,12 +46,15 @@ interface SolarSystemState {
     toggleMoons: () => void;
     toggleAsteroids: () => void;
     toggleGrid: () => void;
+    zoomIn: () => void;
+    zoomOut: () => void;
+    resetZoom: () => void;
 }
 
 export const useSolarSystemStore = create<SolarSystemState>((set, get) => ({
     simulationTime: currentJulianDate(),
     isPlaying: true,
-    speedIndex: 3,
+    speedIndex: 1, // 1x by default
     timeDirection: 1,
     selectedBody: null,
     focusTarget: null,
@@ -60,6 +64,7 @@ export const useSolarSystemStore = create<SolarSystemState>((set, get) => ({
     showMoons: true,
     showAsteroids: true,
     showGrid: false,
+    zoomLevel: 1,
 
     tick: (delta) => {
         const s = get();
@@ -89,4 +94,7 @@ export const useSolarSystemStore = create<SolarSystemState>((set, get) => ({
     toggleMoons: () => set((s) => ({ showMoons: !s.showMoons })),
     toggleAsteroids: () => set((s) => ({ showAsteroids: !s.showAsteroids })),
     toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),
+    zoomIn: () => set((s) => ({ zoomLevel: Math.min(s.zoomLevel * 1.3, 10) })),
+    zoomOut: () => set((s) => ({ zoomLevel: Math.max(s.zoomLevel / 1.3, 0.1) })),
+    resetZoom: () => set({ zoomLevel: 1 }),
 }));

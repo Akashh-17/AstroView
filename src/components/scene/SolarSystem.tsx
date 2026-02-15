@@ -1,8 +1,9 @@
 /**
  * SolarSystem.tsx — Root 3D scene component
+ * Includes Sun, planets, moons, and asteroid belt.
  */
-import { useCallback } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { useCallback, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import Sun from './Sun';
 import Planet from './Planet';
@@ -75,8 +76,30 @@ export default function SolarSystem() {
             style={{ background: '#000000' }}
             dpr={[1, 2]}
             performance={{ min: 0.5 }}
+            eventPrefix="client"
         >
+            <SceneCleanup />
             <SolarSystemScene />
         </Canvas>
     );
+}
+
+/** Dispose WebGL resources on unmount to ensure clean route transitions */
+function SceneCleanup() {
+    const { gl, scene } = useThree();
+    useEffect(() => {
+        return () => {
+            scene.traverse((obj) => {
+                if ((obj as THREE.Mesh).geometry) (obj as THREE.Mesh).geometry.dispose();
+                if ((obj as THREE.Mesh).material) {
+                    const mat = (obj as THREE.Mesh).material;
+                    if (Array.isArray(mat)) mat.forEach((m) => m.dispose());
+                    else mat.dispose();
+                }
+            });
+            gl.dispose();
+            gl.forceContextLoss();
+        };
+    }, [gl, scene]);
+    return null;
 }
